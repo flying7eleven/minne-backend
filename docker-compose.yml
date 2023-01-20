@@ -1,0 +1,44 @@
+version: "3"
+services:
+  minne_database:
+    container_name: minne_database
+    image: postgres:15
+    volumes:
+      - ./.docker_volumes/postgres_data:/var/lib/postgresql/data:rw
+    environment:
+      - POSTGRES_USER=minne
+      - POSTGRES_PASSWORD=debugpassword
+      - POSTGRES_DB=minne
+    restart: "unless-stopped"
+    networks:
+      - minne
+    ports:
+      - "5432:5432" # just needs to be exported for debugging purposes
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U minne" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+#  minne_backend:
+#    container_name: minne_backend
+#    image: minne-backend:local
+#    environment:
+#      - MINNE_LOGGING_LEVEL=trace
+#      - MINNE_TOKEN_SIGNATURE_PSK=tokenpsk
+#      - MINNE_DB_CONNECTION=postgres://minne:debugpassword@minne_database/minne
+#    restart: "unless-stopped"
+#    depends_on:
+#      - minne_database
+#    networks:
+#      - minne
+#    ports:
+#      - "5645:5645" # just needs to be exported for debugging purposes
+#    healthcheck:
+#      test: [ "CMD-SHELL", "curl --user-agent docker-health-check/1.0 --fail http://127.0.0.1:5479/health" ]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+networks:
+  minne:
+    driver: bridge
+
