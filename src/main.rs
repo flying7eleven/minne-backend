@@ -71,12 +71,14 @@ fn setup_logging(logging_level: LevelFilter) {
 async fn main() {
     use log::{debug, error, info};
     use minne_backend::fairings::{BackendConfiguration, MinneDatabaseConnection, NoCacheFairing};
+    use minne_backend::routes::{check_backend_health, get_backend_version};
     use rocket::config::{Shutdown, Sig};
     use rocket::figment::{
         util::map,
         value::{Map, Value},
     };
     use rocket::http::Method;
+    use rocket::routes;
     use rocket::Config as RocketConfig;
     use rocket_cors::{AllowedHeaders, AllowedOrigins};
     use std::env;
@@ -231,6 +233,7 @@ async fn main() {
         .attach(no_cache_header)
         .manage(backend_config)
         .manage(MinneDatabaseConnection::from(db_connection_pool))
+        .mount("/v1", routes![check_backend_health, get_backend_version])
         .launch()
         .await;
 }
