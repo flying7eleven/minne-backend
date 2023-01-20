@@ -41,6 +41,11 @@ version = "0.5.0-rc.2"
 default-features = false
 features = ["json"]
 
+[dependencies.rocket_cors]
+git = "https://github.com/lawliet89/rocket_cors" # should be replaced with a working release version
+branch = "master"
+default-features = false
+
 [build-dependencies.vergen]
 version = "7.5.0"
 default-features = false

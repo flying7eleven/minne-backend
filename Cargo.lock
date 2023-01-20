@@ -38,6 +38,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "aho-corasick"
+version = "0.7.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc936419f96fa211c1b9166887b38e5e40b19958e5b895be7c1f93adec7071ac"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "android_system_properties"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -928,6 +937,7 @@ dependencies = [
  "log",
  "r2d2",
  "rocket",
+ "rocket_cors",
  "vergen",
 ]
 
@@ -1248,6 +1258,8 @@ version = "1.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "48aaa5748ba571fb95cd2c85c09f629215d3a6ece942baa100950af03a34f733"
 dependencies = [
+ "aho-corasick",
+ "memchr",
  "regex-syntax",
 ]
 
@@ -1328,6 +1340,19 @@ dependencies = [
  "rocket_http",
  "syn",
  "unicode-xid",
+]
+
+[[package]]
+name = "rocket_cors"
+version = "0.6.0-alpha1"
+source = "git+https://github.com/lawliet89/rocket_cors?branch=master#c17e8145baa4790319fdb6a473e465b960f55e7c"
+dependencies = [
+ "http",
+ "log",
+ "regex",
+ "rocket",
+ "unicase",
+ "url",
 ]
 
 [[package]]
@@ -1790,6 +1815,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09b01702b0fd0b3fadcf98e098780badda8742d4f4a7676615cad90e8ac73622"
 dependencies = [
  "serde",
+ "version_check",
+]
+
+[[package]]
+name = "unicase"
+version = "2.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50f37be617794602aabbeee0be4f259dc1778fabe05e2d67ee8f79326d5cb4f6"
+dependencies = [
  "version_check",
 ]
 
