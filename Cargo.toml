@@ -10,6 +10,11 @@ license-file = "LICENSE.md"
 rust-version = "1.66"
 build = "build.rs"
 
+[dependencies.chrono]
+version = "0.4.23"
+default-features = false
+features = ["clock", "serde"]
+
 [dependencies.diesel]
 version = "2.0.2"
 default-features = false
@@ -17,6 +22,14 @@ features = ["postgres", "r2d2", "chrono"]
 
 [dependencies.diesel_migrations]
 version = "2.0.0"
+default-features = false
+
+[dependencies.fern]
+version = "0.6.1"
+default-features = false
+
+[dependencies.log]
+version = "0.4.17"
 default-features = false
 
 [dependencies.rocket]

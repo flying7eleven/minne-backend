@@ -179,6 +179,7 @@ dependencies = [
  "iana-time-zone",
  "num-integer",
  "num-traits",
+ "serde",
  "winapi",
 ]
 
@@ -423,6 +424,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7a407cfaa3385c4ae6b23e84623d48c2798d06e3e6a1878f7f59f17b3f86499"
 dependencies = [
  "instant",
+]
+
+[[package]]
+name = "fern"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3bdd7b0849075e79ee9a1836df22c717d1eba30451796fdc631b04565dd11e2a"
+dependencies = [
+ "log",
 ]
 
 [[package]]
@@ -911,8 +921,11 @@ checksum = "2a60c7ce501c71e03a9c9c0d35b861413ae925bd979cc7a4e30d060069aaac8d"
 name = "minne-backend"
 version = "0.0.0"
 dependencies = [
+ "chrono",
  "diesel",
  "diesel_migrations",
+ "fern",
+ "log",
  "rocket",
  "vergen",
 ]
