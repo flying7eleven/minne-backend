@@ -10,6 +10,11 @@ license-file = "LICENSE.md"
 rust-version = "1.66"
 build = "build.rs"
 
+[dependencies.bcrypt]
+version = "0.13.0"
+default-features = false
+features = ["std"]
+
 [dependencies.chrono]
 version = "0.4.23"
 default-features = false
