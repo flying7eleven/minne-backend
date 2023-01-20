@@ -926,6 +926,7 @@ dependencies = [
  "diesel_migrations",
  "fern",
  "log",
+ "r2d2",
  "rocket",
  "vergen",
 ]
