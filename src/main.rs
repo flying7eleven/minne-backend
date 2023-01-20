@@ -1,11 +1,8 @@
-use log::LevelFilter;
 use diesel::PgConnection;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations};
-
-mod fairings;
+use log::LevelFilter;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
-
 
 #[inline(always)]
 fn unset_environment_variable(name: &str) {
@@ -18,13 +15,19 @@ pub fn run_migrations(connection: &mut PgConnection) {
     match connection.run_pending_migrations(MIGRATIONS) {
         Ok(ran_migrations) => {
             if !ran_migrations.is_empty() {
-                info!("Successfully ran {} database migrations", ran_migrations.len());
+                info!(
+                    "Successfully ran {} database migrations",
+                    ran_migrations.len()
+                );
             } else {
                 info!("No migrations had to be run since the database is up to date");
             }
         }
         Err(error) => {
-            error!("Failed to run the database migrations. The error was: {}", error)
+            error!(
+                "Failed to run the database migrations. The error was: {}",
+                error
+            )
         }
     }
 }
@@ -66,9 +69,8 @@ fn setup_logging(logging_level: LevelFilter) {
 
 #[rocket::main]
 async fn main() {
-    use log::{info, error, debug};
-    use fairings::{BackendConfiguration, MinneDatabaseConnection, NoCacheFairing};
-    use std::env;
+    use log::{debug, error, info};
+    use minne_backend::fairings::{BackendConfiguration, MinneDatabaseConnection, NoCacheFairing};
     use rocket::config::{Shutdown, Sig};
     use rocket::figment::{
         util::map,
@@ -77,6 +79,7 @@ async fn main() {
     use rocket::http::Method;
     use rocket::Config as RocketConfig;
     use rocket_cors::{AllowedHeaders, AllowedOrigins};
+    use std::env;
 
     // select the logging level from a set environment variable
     let logging_level = match env::var("MINNE_LOGGING_LEVEL") {
@@ -102,14 +105,16 @@ async fn main() {
     );
 
     // get the configuration for the database server and terminate if something is missing
-    let database_connection_url = env::var("MINNE_DB_CONNECTION").unwrap_or_else(|_| "".to_string());
+    let database_connection_url =
+        env::var("MINNE_DB_CONNECTION").unwrap_or_else(|_| "".to_string());
     if database_connection_url.is_empty() {
         error!("Could not get the configuration for the database server. Ensure MINNE_DB_CONNECTION is set properly");
         return;
     }
 
     // get the psk for the token signature
-    let token_signature_psk = env::var("MINNE_TOKEN_SIGNATURE_PSK").unwrap_or_else(|_| "".to_string());
+    let token_signature_psk =
+        env::var("MINNE_TOKEN_SIGNATURE_PSK").unwrap_or_else(|_| "".to_string());
     if token_signature_psk.is_empty() {
         error!("Could not get the token signature PSK. Ensure MINNE_TOKEN_SIGNATURE_PSK is set properly");
         return;
@@ -143,13 +148,20 @@ async fn main() {
     }
 
     // create a db connection pool manager and the corresponding pool
-    let db_connection_pool_manager = diesel::r2d2::ConnectionManager::new(database_connection_url.clone());
-    let db_connection_pool = r2d2::Pool::builder().max_size(15).build(db_connection_pool_manager).unwrap();
+    let db_connection_pool_manager =
+        diesel::r2d2::ConnectionManager::new(database_connection_url.clone());
+    let db_connection_pool = r2d2::Pool::builder()
+        .max_size(15)
+        .build(db_connection_pool_manager)
+        .unwrap();
     debug!("Successfully connected to the database server");
 
     // ensure the database is setup correctly
     run_migrations(&mut db_connection_pool.get().unwrap_or_else(|e| {
-        error!("Could not get a database connection from the connection pool. The error was: {}", e);
+        error!(
+            "Could not get a database connection from the connection pool. The error was: {}",
+            e
+        );
         std::process::exit(-1);
     }));
     info!("Database preparations finished");
@@ -185,16 +197,22 @@ async fn main() {
     let allowed_origins = AllowedOrigins::All;
     let cors_header = rocket_cors::CorsOptions {
         allowed_origins,
-        allowed_methods: vec![Method::Get, Method::Post, Method::Put, Method::Patch, Method::Delete]
-            .into_iter()
-            .map(From::from)
-            .collect(),
+        allowed_methods: vec![
+            Method::Get,
+            Method::Post,
+            Method::Put,
+            Method::Patch,
+            Method::Delete,
+        ]
+        .into_iter()
+        .map(From::from)
+        .collect(),
         allowed_headers: AllowedHeaders::All,
         allow_credentials: true,
         ..Default::default()
     }
-        .to_cors()
-        .unwrap();
+    .to_cors()
+    .unwrap();
 
     // create a fairing which is setting a cache control header to not cache
     // the API responses
