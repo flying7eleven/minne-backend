@@ -8,5 +8,6 @@ repository = "https://github.com/flying7eleven/minne-backend"
 readme = "README.md"
 license-file = "LICENSE.md"
 rust-version = "1.66"
+build = "build.rs"
 
 [dependencies]
