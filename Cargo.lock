@@ -938,6 +938,7 @@ dependencies = [
  "r2d2",
  "rocket",
  "rocket_cors",
+ "serde",
  "vergen",
 ]
 

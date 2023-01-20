@@ -46,6 +46,10 @@ git = "https://github.com/lawliet89/rocket_cors" # should be replaced with a wor
 branch = "master"
 default-features = false
 
+[dependencies.serde]
+version = "1.0.152"
+default-features = false
+
 [build-dependencies.vergen]
 version = "7.5.0"
 default-features = false
