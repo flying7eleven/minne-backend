@@ -3,7 +3,7 @@ FROM debian:bullseye AS build
 
 # ensure we have rust installed in the appropiate version
 RUN apt update && \
-    apt install -y curl build-essential libpq-dev && \
+    apt install -y curl build-essential libpq-dev git && \
     curl https://sh.rustup.rs -sSf | \
     sh -s -- --default-toolchain stable -y
 ENV PATH=/root/.cargo/bin:$PATH
