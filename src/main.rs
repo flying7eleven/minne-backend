@@ -136,11 +136,18 @@ async fn main() {
         .parse::<usize>()
         .unwrap_or(3600);
 
+    // get the refresh token life time in seconds
+    let user_registration_enabled = env::var("MINNE_ENABLE_USER_REGISTRATION")
+        .unwrap_or_else(|_| "false".to_string())
+        .parse::<bool>()
+        .unwrap_or(false);
+
     // create a struct which holds the whole configuration
     let backend_config = BackendConfiguration {
         token_signature_psk: token_signature_psk.to_string(),
         access_token_lifetime_in_seconds,
         refresh_token_lifetime_in_seconds,
+        user_registration_enabled,
     };
 
     // just wait for 10 seconds until we continue. This is just an ugly fix that we have to wait until the database server
