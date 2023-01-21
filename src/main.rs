@@ -71,7 +71,9 @@ fn setup_logging(logging_level: LevelFilter) {
 async fn main() {
     use log::{debug, error, info};
     use minne_backend::fairings::{BackendConfiguration, MinneDatabaseConnection, NoCacheFairing};
-    use minne_backend::routes::{health::check_backend_health, version::get_backend_version};
+    use minne_backend::routes::{
+        health::check_backend_health, user::create_new_user, version::get_backend_version,
+    };
     use rocket::config::{Shutdown, Sig};
     use rocket::figment::{
         util::map,
@@ -233,7 +235,10 @@ async fn main() {
         .attach(no_cache_header)
         .manage(backend_config)
         .manage(MinneDatabaseConnection::from(db_connection_pool))
-        .mount("/v1", routes![check_backend_health, get_backend_version])
+        .mount(
+            "/v1",
+            routes![check_backend_health, get_backend_version, create_new_user],
+        )
         .launch()
         .await;
 }
