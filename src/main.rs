@@ -124,7 +124,7 @@ async fn main() {
 
     // get the access token life time in seconds
     let access_token_lifetime_in_seconds = env::var("MINNE_ACCESS_TOKEN_LIFETIME_IN_SECONDS")
-        .unwrap_or_else(|_| "60".to_string())
+        .unwrap_or_else(|_| "300".to_string())
         .parse::<usize>()
         .unwrap_or(300);
 
