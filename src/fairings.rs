@@ -30,6 +30,8 @@ pub struct BackendConfiguration {
     pub access_token_lifetime_in_seconds: usize,
     /// The refresh token-lifetime in seconds.
     pub refresh_token_lifetime_in_seconds: usize,
+    /// Whether or not the user registration is enabled.
+    pub user_registration_enabled: bool,
 }
 
 /// The fairing which can be used for setting a cache-control

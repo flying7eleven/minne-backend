@@ -1,4 +1,4 @@
-use crate::fairings::MinneDatabaseConnection;
+use crate::fairings::{BackendConfiguration, MinneDatabaseConnection};
 use crate::schema::users;
 use chrono::NaiveDateTime;
 use rocket::http::Status;
@@ -43,12 +43,18 @@ pub struct NewUserCallData {
 #[post("/user/create", data = "<new_user>")]
 pub async fn create_new_user(
     db_connection_pool: &State<MinneDatabaseConnection>,
+    config: &State<BackendConfiguration>,
     new_user: Json<NewUserCallData>,
 ) -> Status {
     use diesel::ExpressionMethods;
     use diesel::QueryDsl;
     use diesel::RunQueryDsl;
     use log::error;
+
+    // if user registration is disabled, exit early
+    if !config.user_registration_enabled {
+        return Status::Forbidden;
+    }
 
     // ensure that the password and the repeated password are the same
     if new_user.password != new_user.password_repeat {
