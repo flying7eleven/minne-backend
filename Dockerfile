@@ -11,6 +11,7 @@ ENV PATH=/root/.cargo/bin:$PATH
 # copy the source files and build the backend in release-mode
 COPY . /usr/src/app
 WORKDIR /usr/src/app
+RUN git config --global --add safe.directory /usr/src/app
 RUN cargo build --release
 
 # configure the acutal container for running the backend
