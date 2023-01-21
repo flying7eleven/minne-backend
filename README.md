@@ -6,4 +6,7 @@
 - `MINNE_TOKEN_SIGNATURE_PSK` - The PSK used to sign the JWT tokens for the authentication process
 - `MINNE_ACCESS_TOKEN_LIFETIME_IN_SECONDS` - The lifetime of the access token in seconds. Default: `300`
 - `MINNE_REFRESH_TOKEN_LIFETIME_IN_SECONDS` - The lifetime of the refresh token in seconds. Default: `3600`
-- `MINNE_ENABLE_USER_REGISTRATION` - Whether or not to enable user registration. Default: `false`
+- `MINNE_ENABLE_USER_REGISTRATION` - Whether to enable user registration or leave it disabled. Default: `false`
+
+## Create a new user
+`curl --verbose http://127.0.0.1:5645/v1/user/create -H "Content-Type: application/json" -d @example_payloads/create_user.json`
