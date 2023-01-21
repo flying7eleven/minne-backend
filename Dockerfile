@@ -30,7 +30,7 @@ WORKDIR /usr/local/bin
 USER 1001
 
 # expose the backend port
-EXPOSE 5479/tcp
+EXPOSE 5842/tcp
 
 # startup the backend
 CMD exec /usr/local/bin/minne-backend

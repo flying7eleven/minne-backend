@@ -15,7 +15,7 @@ Build the backend container by going into the root directory of the repository a
 
 ## Create a new user
 
-`curl --verbose http://127.0.0.1:5645/v1/user/create -H "Content-Type: application/json" -d @example_payloads/create_user.json`
+`curl --verbose http://127.0.0.1:5842/v1/user/create -H "Content-Type: application/json" -d @example_payloads/create_user.json`
 
 ## Get an authentication token
-`curl --verbose http://127.0.0.1:5645/v1/auth/login -H "Content-Type: application/json" -d @example_payloads/login.json`
+`curl --verbose http://127.0.0.1:5842/v1/auth/login -H "Content-Type: application/json" -d @example_payloads/login.json`
