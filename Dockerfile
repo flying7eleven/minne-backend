@@ -29,6 +29,14 @@ WORKDIR /usr/local/bin
 # configure the user(-id) for the running process
 USER 1001
 
+# configure the default values for the possible environment variables
+ENV MINNE_LOGGING_LEVEL=info
+ENV MINNE_DB_CONNECTION=postgres://minne:debuguser@minne_database:5432/minne
+ENV MINNE_TOKEN_SIGNATURE_PSK=default_psk
+ENV MINNE_ACCESS_TOKEN_LIFETIME_IN_SECONDS=300
+ENV MINNE_REFRESH_TOKEN_LIFETIME_IN_SECONDS=3600
+ENV MINNE_ENABLE_USER_REGISTRATION=false
+
 # expose the backend port
 EXPOSE 5842/tcp
 
