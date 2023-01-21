@@ -71,7 +71,10 @@ fn setup_logging(logging_level: LevelFilter) {
 async fn main() {
     use log::{debug, error, info};
     use minne_backend::fairings::{BackendConfiguration, MinneDatabaseConnection, NoCacheFairing};
-    use minne_backend::routes::{check_backend_health, get_backend_version};
+    use minne_backend::routes::{
+        auth::get_authentication_token, health::check_backend_health, user::create_new_user,
+        version::get_backend_version,
+    };
     use rocket::config::{Shutdown, Sig};
     use rocket::figment::{
         util::map,
@@ -124,7 +127,7 @@ async fn main() {
 
     // get the access token life time in seconds
     let access_token_lifetime_in_seconds = env::var("MINNE_ACCESS_TOKEN_LIFETIME_IN_SECONDS")
-        .unwrap_or_else(|_| "60".to_string())
+        .unwrap_or_else(|_| "300".to_string())
         .parse::<usize>()
         .unwrap_or(300);
 
@@ -134,11 +137,18 @@ async fn main() {
         .parse::<usize>()
         .unwrap_or(3600);
 
+    // get the refresh token life time in seconds
+    let user_registration_enabled = env::var("MINNE_ENABLE_USER_REGISTRATION")
+        .unwrap_or_else(|_| "false".to_string())
+        .parse::<bool>()
+        .unwrap_or(false);
+
     // create a struct which holds the whole configuration
     let backend_config = BackendConfiguration {
         token_signature_psk: token_signature_psk.to_string(),
         access_token_lifetime_in_seconds,
         refresh_token_lifetime_in_seconds,
+        user_registration_enabled,
     };
 
     // just wait for 10 seconds until we continue. This is just an ugly fix that we have to wait until the database server
@@ -233,7 +243,15 @@ async fn main() {
         .attach(no_cache_header)
         .manage(backend_config)
         .manage(MinneDatabaseConnection::from(db_connection_pool))
-        .mount("/v1", routes![check_backend_health, get_backend_version])
+        .mount(
+            "/v1",
+            routes![
+                check_backend_health,
+                get_backend_version,
+                create_new_user,
+                get_authentication_token
+            ],
+        )
         .launch()
         .await;
 }
