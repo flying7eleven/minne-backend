@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{post, State};
 use serde::Deserialize;
 
-#[derive(Queryable)]
+#[derive(Queryable, Clone)]
 pub struct User {
     pub id: i32,
     pub first_name: String,
