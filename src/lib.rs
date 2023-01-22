@@ -8,4 +8,5 @@ pub mod routes {
     pub mod user;
     pub mod version;
 }
+pub mod guards;
 pub mod schema;
