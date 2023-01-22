@@ -5,6 +5,7 @@ pub mod fairings;
 pub mod routes {
     pub mod auth;
     pub mod health;
+    pub mod task;
     pub mod user;
     pub mod version;
 }
