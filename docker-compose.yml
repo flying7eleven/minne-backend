@@ -26,6 +26,7 @@ services:
 #      - MINNE_LOGGING_LEVEL=trace
 #      - MINNE_TOKEN_SIGNATURE_PSK=tokenpsk
 #      - MINNE_DB_CONNECTION=postgres://minne:debugpassword@minne_database/minne
+#      - MINNE_ENABLE_USER_REGISTRATION=true
 #    restart: "unless-stopped"
 #    depends_on:
 #      - minne_database

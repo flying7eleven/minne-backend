@@ -187,7 +187,7 @@ async fn main() {
     // rocket configuration figment
     let rocket_configuration_figment = RocketConfig::figment()
         .merge(("databases", map!["saker" => minne_database_config]))
-        .merge(("port", 5645))
+        .merge(("port", 5842))
         .merge(("address", std::net::Ipv4Addr::new(0, 0, 0, 0)))
         .merge((
             "shutdown",
