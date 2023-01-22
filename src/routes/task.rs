@@ -5,10 +5,10 @@ use chrono::NaiveDateTime;
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::State;
-use rocket::{delete, post};
-use serde::Deserialize;
+use rocket::{delete, get, post};
+use serde::{Deserialize, Serialize};
 
-#[derive(Queryable)]
+#[derive(Queryable, Serialize)]
 pub struct Task {
     pub id: i32,
     pub title: String,
@@ -28,6 +28,14 @@ pub struct NewTask {
 pub struct NewTaskSuppliedData {
     /// The title for the new task.
     pub title: String,
+}
+
+#[get("/task/list")]
+pub async fn get_all_tasks_from_user(
+    _db_connection_pool: &State<MinneDatabaseConnection>,
+    _authenticated_user: AuthenticatedUser,
+) -> Result<Json<Vec<Task>>, Status> {
+    Err(Status::NotImplemented)
 }
 
 #[post("/task/new", data = "<new_task_data>")]
