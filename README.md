@@ -9,8 +9,8 @@ Build the backend container by going into the root directory of the repository a
 ### Create a new user
 `curl --verbose http://127.0.0.1:5842/v1/user/create -H "Content-Type: application/json" -d @example_payloads/create_user.json`
 
-### Get an authentication token
-`curl --verbose http://127.0.0.1:5842/v1/auth/login -H "Content-Type: application/json" -d @example_payloads/login.json`
+### Get an authentication token (and store it in `access_token.tmp`)
+`curl --verbose http://127.0.0.1:5842/v1/auth/login -H "Content-Type: application/json" -d @example_payloads/login.json | grep -oP '(?<=accessToken":")[^"]*' > access_token.tmp`
 
 ## Environment Variables
 - `MINNE_LOGGING_LEVEL` - The verbosity of the logging. Default: `info` (options: `trace`, `debug`, `info`, `warn`, `error`)
