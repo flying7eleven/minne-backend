@@ -21,11 +21,11 @@ pub struct TokenResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Claims {
+pub struct Claims {
     exp: usize,
     iat: usize,
     nbf: usize,
-    sub: String,
+    pub sub: String,
 }
 
 fn get_token_for_user(
