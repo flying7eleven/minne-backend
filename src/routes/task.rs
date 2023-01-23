@@ -5,16 +5,27 @@ use chrono::NaiveDateTime;
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::State;
-use rocket::{delete, post};
-use serde::Deserialize;
+use rocket::{delete, get, post};
+use serde::{Deserialize, Serialize};
 
-#[derive(Queryable)]
+#[derive(Queryable, Serialize)]
 pub struct Task {
     pub id: i32,
     pub title: String,
     pub owner: i32,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+    pub done_at: Option<NaiveDateTime>,
+}
+
+#[derive(Serialize)]
+pub struct SimplifiedTask {
+    pub id: i32,
+    pub title: String,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub done_at: Option<NaiveDateTime>,
 }
 
 #[derive(Insertable)]
@@ -28,6 +39,59 @@ pub struct NewTask {
 pub struct NewTaskSuppliedData {
     /// The title for the new task.
     pub title: String,
+}
+
+#[get("/task/list")]
+pub async fn get_all_tasks_from_user(
+    db_connection_pool: &State<MinneDatabaseConnection>,
+    authenticated_user: AuthenticatedUser,
+) -> Result<Json<Vec<SimplifiedTask>>, Status> {
+    use diesel::ExpressionMethods;
+    use diesel::QueryDsl;
+    use diesel::RunQueryDsl;
+    use log::error;
+
+    // get a connection to the database for dealing with the request
+    let db_connection = &mut match db_connection_pool.get() {
+        Ok(connection) => connection,
+        Err(error) => {
+            error!(
+                "Could not get a connection from the database connection pool. The error was: {}",
+                error
+            );
+            return Err(Status::InternalServerError);
+        }
+    };
+
+    // get all tasks of the authenticated user from the database
+    let tasks = match tasks::table
+        .filter(tasks::owner.eq(authenticated_user.id))
+        .load::<Task>(db_connection)
+    {
+        Ok(tasks) => tasks,
+        Err(error) => {
+            error!(
+                "Could not get all tasks of the user from the database. The error was: {}",
+                error
+            );
+            return Err(Status::InternalServerError);
+        }
+    };
+
+    // convert the tasks to simplified tasks
+    let simplified_tasks = tasks
+        .into_iter()
+        .map(|task| SimplifiedTask {
+            id: task.id,
+            title: task.title,
+            created_at: task.created_at,
+            updated_at: task.updated_at,
+            done_at: task.done_at,
+        })
+        .collect();
+
+    // return the fetch list of tasks
+    return Ok(Json(simplified_tasks));
 }
 
 #[post("/task/new", data = "<new_task_data>")]

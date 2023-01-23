@@ -7,6 +7,7 @@ diesel::table! {
         owner -> Int4,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        done_at -> Nullable<Timestamp>,
     }
 }
 
