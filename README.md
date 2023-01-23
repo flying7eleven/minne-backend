@@ -18,6 +18,9 @@ Build the backend container by going into the root directory of the repository a
 ### Use the stored access token to delete an own task (with the id 1)
 `curl --verbose -XDELETE http://127.0.0.1:5842/v1/task/1 -H "Content-Type: application/json" -H @access_token.tmp`
 
+### Use the stored access token to fetch all tasks of the logged-in user
+`curl --verbose http://127.0.0.1:5842/v1/task/list -H @access_token.tmp`
+
 ## Environment Variables
 - `MINNE_LOGGING_LEVEL` - The verbosity of the logging. Default: `info` (options: `trace`, `debug`, `info`, `warn`, `error`)
 - `MINNE_DB_CONNECTION` - The connection string for the database (e.g. `postgres://postgres:postgres@localhost:5432/minne`)

@@ -32,10 +32,43 @@ pub struct NewTaskSuppliedData {
 
 #[get("/task/list")]
 pub async fn get_all_tasks_from_user(
-    _db_connection_pool: &State<MinneDatabaseConnection>,
-    _authenticated_user: AuthenticatedUser,
+    db_connection_pool: &State<MinneDatabaseConnection>,
+    authenticated_user: AuthenticatedUser,
 ) -> Result<Json<Vec<Task>>, Status> {
-    Err(Status::NotImplemented)
+    use diesel::ExpressionMethods;
+    use diesel::QueryDsl;
+    use diesel::RunQueryDsl;
+    use log::error;
+
+    // get a connection to the database for dealing with the request
+    let db_connection = &mut match db_connection_pool.get() {
+        Ok(connection) => connection,
+        Err(error) => {
+            error!(
+                "Could not get a connection from the database connection pool. The error was: {}",
+                error
+            );
+            return Err(Status::InternalServerError);
+        }
+    };
+
+    // get all tasks of the authenticated user from the database
+    let tasks = match tasks::table
+        .filter(tasks::owner.eq(authenticated_user.id))
+        .load::<Task>(db_connection)
+    {
+        Ok(tasks) => tasks,
+        Err(error) => {
+            error!(
+                "Could not get all tasks of the user from the database. The error was: {}",
+                error
+            );
+            return Err(Status::InternalServerError);
+        }
+    };
+
+    // return the fetch list of tasks
+    return Ok(Json(tasks));
 }
 
 #[post("/task/new", data = "<new_task_data>")]
