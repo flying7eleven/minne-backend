@@ -15,6 +15,17 @@ pub struct Task {
     pub owner: i32,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+    pub done_at: Option<NaiveDateTime>,
+}
+
+#[derive(Serialize)]
+pub struct SimplifiedTask {
+    pub id: i32,
+    pub title: String,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub done_at: Option<NaiveDateTime>,
 }
 
 #[derive(Insertable)]
@@ -34,7 +45,7 @@ pub struct NewTaskSuppliedData {
 pub async fn get_all_tasks_from_user(
     db_connection_pool: &State<MinneDatabaseConnection>,
     authenticated_user: AuthenticatedUser,
-) -> Result<Json<Vec<Task>>, Status> {
+) -> Result<Json<Vec<SimplifiedTask>>, Status> {
     use diesel::ExpressionMethods;
     use diesel::QueryDsl;
     use diesel::RunQueryDsl;
@@ -67,8 +78,20 @@ pub async fn get_all_tasks_from_user(
         }
     };
 
+    // convert the tasks to simplified tasks
+    let simplified_tasks = tasks
+        .into_iter()
+        .map(|task| SimplifiedTask {
+            id: task.id,
+            title: task.title,
+            created_at: task.created_at,
+            updated_at: task.updated_at,
+            done_at: task.done_at,
+        })
+        .collect();
+
     // return the fetch list of tasks
-    return Ok(Json(tasks));
+    return Ok(Json(simplified_tasks));
 }
 
 #[post("/task/new", data = "<new_task_data>")]
