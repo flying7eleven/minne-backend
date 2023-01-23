@@ -1,0 +1,52 @@
+version: "3"
+services:
+  minne_database:
+    container_name: minne_database
+    image: postgres:15
+    volumes:
+      - ./.docker_volumes/postgres_data:/var/lib/postgresql/data:rw
+    environment:
+      - POSTGRES_USER=minne
+      - POSTGRES_PASSWORD=debugpassword
+      - POSTGRES_DB=minne
+    restart: "unless-stopped"
+    networks:
+      - minne
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U minne" ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    labels:
+      - traefik.enable=false
+  minne_backend:
+    container_name: minne_backend
+    image: ghcr.io/flying7eleven/minne-backend:latest
+    environment:
+      - MINNE_LOGGING_LEVEL=info
+      - MINNE_TOKEN_SIGNATURE_PSK=somerandompsk_to_not_reuse_this
+      - MINNE_DB_CONNECTION=postgres://minne:debugpassword@minne_database/minne
+      - MINNE_ENABLE_USER_REGISTRATION=false
+    restart: "unless-stopped"
+    depends_on:
+      - minne_database
+    networks:
+      - minne
+      - traefik
+    healthcheck:
+      test: [ "CMD-SHELL", "curl --user-agent docker-health-check/1.0 --fail http://127.0.0.1:5842/v1/health" ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.minne.rule=Host(`minne.example.com`)
+      - traefik.http.routers.minne.entrypoints=https
+      - traefik.http.routers.minne.tls=true
+      - traefik.http.routers.minne.tls.certresolver=letsencrypt
+      - traefik.http.services.minne.loadbalancer.server.port=5842
+      - traefik.docker.network=git_traefik
+networks:
+  minne:
+    driver: bridge
+
