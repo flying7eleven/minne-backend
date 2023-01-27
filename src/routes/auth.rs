@@ -42,6 +42,7 @@ pub struct PersonalAccessToken {
     pub token: String,
     pub secret: String,
     pub user_id: i32,
+    pub disabled: bool,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }

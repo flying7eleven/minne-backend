@@ -9,6 +9,7 @@ diesel::table! {
         user_id -> Int4,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        disabled -> Bool,
     }
 }
 
