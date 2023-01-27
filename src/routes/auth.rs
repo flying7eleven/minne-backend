@@ -1,9 +1,16 @@
 use crate::fairings::{BackendConfiguration, MinneDatabaseConnection};
+use crate::guards::AuthenticatedUser;
 use rocket::http::Status;
 use rocket::post;
 use rocket::serde::json::Json;
 use rocket::State;
 use serde::{Deserialize, Serialize};
+
+#[derive(Deserialize)]
+pub struct NewPersonalAccessTokenData {
+    /// The name of the new personal access token.
+    pub name: String,
+}
 
 #[derive(Deserialize)]
 pub struct Credentials {
@@ -72,6 +79,15 @@ fn get_token_for_user(
 
     // if we fail, return None
     None
+}
+
+#[post("/auth/pat", data = "<new_pata_data>")]
+pub async fn create_new_pat(
+    db_connection_pool: &State<MinneDatabaseConnection>,
+    authenticated_user: AuthenticatedUser,
+    new_pata_data: Json<NewPersonalAccessTokenData>,
+) -> Status {
+    Status::NotImplemented
 }
 
 #[post("/auth/login", data = "<credentials>")]
