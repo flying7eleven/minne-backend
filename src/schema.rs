@@ -1,6 +1,18 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    personal_access_tokens (id) {
+        id -> Int4,
+        name -> Varchar,
+        token -> Varchar,
+        secret -> Varchar,
+        user_id -> Int4,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     tasks (id) {
         id -> Int4,
         title -> Varchar,
@@ -23,6 +35,7 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(personal_access_tokens -> users (user_id));
 diesel::joinable!(tasks -> users (owner));
 
-diesel::allow_tables_to_appear_in_same_query!(tasks, users,);
+diesel::allow_tables_to_appear_in_same_query!(personal_access_tokens, tasks, users,);
