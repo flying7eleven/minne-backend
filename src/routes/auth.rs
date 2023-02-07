@@ -115,7 +115,7 @@ pub async fn disable_pat(
     db_connection_pool: &State<MinneDatabaseConnection>,
     authenticated_user: AuthenticatedUser,
 ) -> Status {
-    use crate::schema::personal_access_tokens::{disabled, table, token};
+    use crate::schema::personal_access_tokens::{disabled, table, token, updated_at};
     use diesel::ExpressionMethods;
     use diesel::RunQueryDsl;
     use log::error;
@@ -140,7 +140,7 @@ pub async fn disable_pat(
     // set the personal access token to disabled based on the use personal access token for authentication
     diesel::update(table)
         .filter(token.eq(authenticated_user.used_pat))
-        .set(disabled.eq(true))
+        .set((disabled.eq(true), updated_at.eq(diesel::dsl::now)))
         .execute(db_connection)
         .unwrap();
 
