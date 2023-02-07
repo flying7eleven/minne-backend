@@ -22,7 +22,7 @@ Build the backend container by going into the root directory of the repository a
 `curl --verbose http://127.0.0.1:5842/v1/task/list -H @access_token.tmp`
 
 ### Create a new Personal Access Token (PAT) for the logged-in user
-`curl --verbose http://127.0.0.1:5842/v1/auth/pat -H "Content-Type: application/json" -H @access_token.tmp --data "{\"name\": \"A descriptive name for the PAT\"}"`
+`curl --verbose http://127.0.0.1:5842/v1/auth/pat -H "Content-Type: application/json" -H @access_token.tmp --data "{\"name\": \"A descriptive name for the PAT\"}" | grep -oP '(?<=token":")[^"]*|(?<=secret":")[^"]*' | sed -z 's/\n/:/' >> pat_token.tmp`
 
 ## Environment Variables
 - `MINNE_LOGGING_LEVEL` - The verbosity of the logging. Default: `info` (options: `trace`, `debug`, `info`, `warn`, `error`)
