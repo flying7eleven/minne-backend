@@ -29,6 +29,9 @@ Build the backend container by going into the root directory of the repository a
 
 **Note**: To be able to use this call, you have to use the PAT you want to disable as the access token.
 
+### Get a task by its id with a users Personal Access Token (PAT)
+`curl --verbose http://127.0.0.1:5842/v1/task/4 -H "Content-Type: application/json" -H @pat_token.tmp`
+
 ## Environment Variables
 - `MINNE_LOGGING_LEVEL` - The verbosity of the logging. Default: `info` (options: `trace`, `debug`, `info`, `warn`, `error`)
 - `MINNE_DB_CONNECTION` - The connection string for the database (e.g. `postgres://postgres:postgres@localhost:5432/minne`)
