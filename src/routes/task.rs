@@ -18,6 +18,16 @@ pub struct Task {
     pub done_at: Option<NaiveDateTime>,
 }
 
+#[derive(Serialize)]
+pub struct SimplifiedTask {
+    pub id: i32,
+    pub title: String,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub done_at: Option<NaiveDateTime>,
+}
+
 #[derive(Insertable)]
 #[diesel(table_name = tasks)]
 pub struct NewTask {
@@ -182,4 +192,55 @@ pub async fn delete_task(
         return Status::InternalServerError;
     }
     Status::NoContent
+}
+
+#[get("/task/<task_id>")]
+pub async fn get_task(
+    db_connection_pool: &State<MinneDatabaseConnection>,
+    authenticated_user: AuthenticatedUser,
+    task_id: i32,
+) -> Result<Json<SimplifiedTask>, Status> {
+    use crate::schema::tasks::{dsl::tasks, id};
+    use diesel::ExpressionMethods;
+    use diesel::{QueryDsl, RunQueryDsl};
+    use log::{error, warn};
+
+    // get the task DTO from the database based on the supplied task id
+    let task = match tasks
+        .filter(id.eq(task_id))
+        .first::<Task>(&mut db_connection_pool.get().unwrap())
+    {
+        Ok(task) => task,
+        Err(error) => {
+            if error == diesel::NotFound {
+                warn!(
+                    "The user tried to delete a task with the id {} that does not exist.",
+                    task_id
+                );
+                return Err(Status::NotFound);
+            }
+            error!(
+                "Could not get the task with the id {} from the database. The error was: {}",
+                task_id, error
+            );
+            return Err(Status::InternalServerError);
+        }
+    };
+
+    // if the tasks does not belong to the authenticated user, return an error
+    if task.owner != authenticated_user.id {
+        return Err(Status::Forbidden);
+    }
+
+    // convert the task DTO to a SimplifiedTask DTO
+    let simplified_task = SimplifiedTask {
+        id: task.id,
+        title: task.title,
+        created_at: task.created_at,
+        updated_at: task.updated_at,
+        done_at: task.done_at,
+    };
+
+    // return the simplified task DTO
+    Ok(Json(simplified_task))
 }
