@@ -3,9 +3,9 @@ use crate::guards::AuthenticatedUser;
 use crate::schema::personal_access_tokens;
 use chrono::NaiveDateTime;
 use rocket::http::Status;
-use rocket::post;
 use rocket::serde::json::Json;
 use rocket::State;
+use rocket::{delete, post};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
@@ -108,6 +108,44 @@ fn get_token_for_user(
 
     // if we fail, return None
     None
+}
+
+#[delete("/auth/pat")]
+pub async fn disable_pat(
+    db_connection_pool: &State<MinneDatabaseConnection>,
+    authenticated_user: AuthenticatedUser,
+) -> Status {
+    use crate::schema::personal_access_tokens::{disabled, table, token};
+    use diesel::ExpressionMethods;
+    use diesel::RunQueryDsl;
+    use log::error;
+
+    // if no personal access token was used, exit early
+    if authenticated_user.used_pat.is_empty() {
+        return Status::BadRequest;
+    }
+
+    // get a connection to the database for dealing with the request
+    let db_connection = &mut match db_connection_pool.get() {
+        Ok(connection) => connection,
+        Err(error) => {
+            error!(
+                "Could not get a connection from the database connection pool. The error was: {}",
+                error
+            );
+            return Status::InternalServerError;
+        }
+    };
+
+    // set the personal access token to disabled based on the use personal access token for authentication
+    diesel::update(table)
+        .filter(token.eq(authenticated_user.used_pat))
+        .set(disabled.eq(true))
+        .execute(db_connection)
+        .unwrap();
+
+    // we assume that we've succeeded and can return with an appropriate status code
+    Status::NoContent
 }
 
 #[post("/auth/pat", data = "<new_pata_data>")]

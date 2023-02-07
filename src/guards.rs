@@ -6,8 +6,8 @@ use rocket::Request;
 pub struct AuthenticatedUser {
     /// The internally used ID for the current user.
     pub id: i32,
-    /// The email address of the user.
-    pub email: String,
+    /// The Personal Access Token which was used or an empty string if the user used a access token.
+    pub used_pat: String,
 }
 
 #[derive(Debug)]
@@ -116,7 +116,7 @@ impl<'r> FromRequest<'r> for AuthenticatedUser {
                 // call the route
                 return Outcome::Success(AuthenticatedUser {
                     id: user_id,
-                    email: decoded_token.claims.sub,
+                    used_pat: "".to_string(),
                 });
             }
             _ => {
