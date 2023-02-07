@@ -7,7 +7,7 @@ description = "Backend for the Minne app"
 repository = "https://github.com/flying7eleven/minne-backend"
 readme = "README.md"
 license-file = "LICENSE.md"
-rust-version = "1.66"
+rust-version = "1.67"
 build = "build.rs"
 
 [dependencies.bcrypt]
@@ -58,6 +58,11 @@ default-features = false
 [dependencies.serde]
 version = "1.0.152"
 default-features = false
+
+[dependencies.uuid]
+version = "1.2.2"
+default-features = false
+features = ["v4"]
 
 [build-dependencies.vergen]
 version = "7.5.0"

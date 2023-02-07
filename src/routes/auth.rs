@@ -1,9 +1,18 @@
 use crate::fairings::{BackendConfiguration, MinneDatabaseConnection};
+use crate::guards::AuthenticatedUser;
+use crate::schema::personal_access_tokens;
+use chrono::NaiveDateTime;
 use rocket::http::Status;
-use rocket::post;
 use rocket::serde::json::Json;
 use rocket::State;
+use rocket::{delete, post};
 use serde::{Deserialize, Serialize};
+
+#[derive(Deserialize)]
+pub struct NewPersonalAccessTokenData {
+    /// The name of the new personal access token.
+    pub name: String,
+}
 
 #[derive(Deserialize)]
 pub struct Credentials {
@@ -18,6 +27,33 @@ pub struct Credentials {
 pub struct TokenResponse {
     /// The access token to use for API requests.
     access_token: String,
+}
+
+#[derive(Serialize)]
+pub struct PersonalAccessTokenResponse {
+    pub token: String,
+    pub secret: String,
+}
+
+#[derive(Queryable)]
+pub struct PersonalAccessToken {
+    pub id: i32,
+    pub name: String,
+    pub token: String,
+    pub secret: String,
+    pub user_id: i32,
+    pub disabled: bool,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = personal_access_tokens)]
+pub struct NewPersonalAccessToken {
+    pub name: String,
+    pub user_id: i32,
+    pub token: String,
+    pub secret: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -72,6 +108,93 @@ fn get_token_for_user(
 
     // if we fail, return None
     None
+}
+
+#[delete("/auth/pat")]
+pub async fn disable_pat(
+    db_connection_pool: &State<MinneDatabaseConnection>,
+    authenticated_user: AuthenticatedUser,
+) -> Status {
+    use crate::schema::personal_access_tokens::{disabled, table, token, updated_at};
+    use diesel::ExpressionMethods;
+    use diesel::RunQueryDsl;
+    use log::error;
+
+    // if no personal access token was used, exit early
+    if authenticated_user.used_pat.is_empty() {
+        return Status::BadRequest;
+    }
+
+    // get a connection to the database for dealing with the request
+    let db_connection = &mut match db_connection_pool.get() {
+        Ok(connection) => connection,
+        Err(error) => {
+            error!(
+                "Could not get a connection from the database connection pool. The error was: {}",
+                error
+            );
+            return Status::InternalServerError;
+        }
+    };
+
+    // set the personal access token to disabled based on the use personal access token for authentication
+    diesel::update(table)
+        .filter(token.eq(authenticated_user.used_pat))
+        .set((disabled.eq(true), updated_at.eq(diesel::dsl::now)))
+        .execute(db_connection)
+        .unwrap();
+
+    // we assume that we've succeeded and can return with an appropriate status code
+    Status::NoContent
+}
+
+#[post("/auth/pat", data = "<new_pata_data>")]
+pub async fn create_new_pat(
+    db_connection_pool: &State<MinneDatabaseConnection>,
+    authenticated_user: AuthenticatedUser,
+    new_pata_data: Json<NewPersonalAccessTokenData>,
+) -> Result<Json<PersonalAccessTokenResponse>, Status> {
+    use crate::schema::personal_access_tokens;
+    use diesel::RunQueryDsl;
+    use log::error;
+    use uuid::Uuid;
+
+    // get a connection to the database for dealing with the request
+    let db_connection = &mut match db_connection_pool.get() {
+        Ok(connection) => connection,
+        Err(error) => {
+            error!(
+                "Could not get a connection from the database connection pool. The error was: {}",
+                error
+            );
+            return Err(Status::InternalServerError);
+        }
+    };
+
+    // create a new personal access token for the user
+    let new_pat = NewPersonalAccessToken {
+        name: new_pata_data.name.clone(),
+        user_id: authenticated_user.id,
+        token: Uuid::new_v4().to_string(),
+        secret: Uuid::new_v4().to_string(),
+    };
+
+    // try to insert the new personal access token into the database
+    let entries_added = diesel::insert_into(personal_access_tokens::table)
+        .values(&new_pat)
+        .execute(db_connection)
+        .unwrap();
+
+    // if we did not add exactly one entry, return an error
+    if entries_added != 1 {
+        return Err(Status::InternalServerError);
+    }
+
+    // return the token as well as the corresponding secret to the calling party
+    Ok(Json(PersonalAccessTokenResponse {
+        token: new_pat.token,
+        secret: new_pat.secret,
+    }))
 }
 
 #[post("/auth/login", data = "<credentials>")]
