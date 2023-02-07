@@ -33,19 +33,25 @@ pub struct SimplifiedTask {
 pub struct NewTask {
     pub title: String,
     pub owner: i32,
+    pub created_at: Option<NaiveDateTime>,
+    pub updated_at: Option<NaiveDateTime>,
 }
 
 #[derive(Deserialize)]
 pub struct NewTaskSuppliedData {
     /// The title for the new task.
     pub title: String,
+    /// An optional time when the task was created. If this is not supplied, the current time will be used
+    pub created_at: Option<NaiveDateTime>,
+    /// An optional time when the task was last modified. If this is not supplied, the current time will be used
+    pub updated_at: Option<NaiveDateTime>,
 }
 
 #[get("/task/list")]
-pub async fn get_all_tasks_from_user(
+pub async fn get_all_task_ids_from_user(
     db_connection_pool: &State<MinneDatabaseConnection>,
     authenticated_user: AuthenticatedUser,
-) -> Result<Json<Vec<SimplifiedTask>>, Status> {
+) -> Result<Json<Vec<i32>>, Status> {
     use diesel::ExpressionMethods;
     use diesel::QueryDsl;
     use diesel::RunQueryDsl;
@@ -78,20 +84,11 @@ pub async fn get_all_tasks_from_user(
         }
     };
 
-    // convert the tasks to simplified tasks
-    let simplified_tasks = tasks
-        .into_iter()
-        .map(|task| SimplifiedTask {
-            id: task.id,
-            title: task.title,
-            created_at: task.created_at,
-            updated_at: task.updated_at,
-            done_at: task.done_at,
-        })
-        .collect();
+    // we do only need the ids of the tasks and nothing else
+    let task_ids = tasks.into_iter().map(|task| task.id).collect();
 
-    // return the fetch list of tasks
-    return Ok(Json(simplified_tasks));
+    // return the fetch list of task ids
+    return Ok(Json(task_ids));
 }
 
 #[post("/task/new", data = "<new_task_data>")]
@@ -99,19 +96,21 @@ pub async fn add_new_task(
     db_connection_pool: &State<MinneDatabaseConnection>,
     authenticated_user: AuthenticatedUser,
     new_task_data: Json<NewTaskSuppliedData>,
-) -> Status {
+) -> Result<Json<i32>, Status> {
     use diesel::RunQueryDsl;
     use log::error;
 
     // if no text for the task was submitted, return an error
     if new_task_data.title.is_empty() {
-        return Status::BadRequest;
+        return Err(Status::BadRequest);
     }
 
     // prepare the DTO for creating the new task
     let new_task = NewTask {
         title: new_task_data.title.clone(),
         owner: authenticated_user.id,
+        created_at: new_task_data.created_at,
+        updated_at: new_task_data.updated_at,
     };
 
     // get a connection to the database for dealing with the request
@@ -122,21 +121,23 @@ pub async fn add_new_task(
                 "Could not get a connection from the database connection pool. The error was: {}",
                 error
             );
-            return Status::InternalServerError;
+            return Err(Status::InternalServerError);
         }
     };
 
-    // add the DTO to the database
-    let entries_added = diesel::insert_into(tasks::table)
+    // add the DTO to the database and get the generated id of the new task
+    let maybe_task_id = diesel::insert_into(tasks::table)
         .values(&new_task)
-        .execute(db_connection)
-        .unwrap();
+        .returning(tasks::id)
+        .get_result::<i32>(db_connection);
 
-    // check if the task was added to the database
-    if entries_added == 0 {
-        return Status::InternalServerError;
+    // check if the task was added to the database and return an error if we failed to do so
+    if maybe_task_id.is_err() {
+        return Err(Status::InternalServerError);
     }
-    Status::NoContent
+
+    // return the generated id for the corresponding task
+    Ok(Json(maybe_task_id.unwrap()))
 }
 
 #[delete("/task/<task_id>")]
@@ -199,4 +200,55 @@ pub async fn delete_task(
         return Status::InternalServerError;
     }
     Status::NoContent
+}
+
+#[get("/task/<task_id>")]
+pub async fn get_task(
+    db_connection_pool: &State<MinneDatabaseConnection>,
+    authenticated_user: AuthenticatedUser,
+    task_id: i32,
+) -> Result<Json<SimplifiedTask>, Status> {
+    use crate::schema::tasks::{dsl::tasks, id};
+    use diesel::ExpressionMethods;
+    use diesel::{QueryDsl, RunQueryDsl};
+    use log::{error, warn};
+
+    // get the task DTO from the database based on the supplied task id
+    let task = match tasks
+        .filter(id.eq(task_id))
+        .first::<Task>(&mut db_connection_pool.get().unwrap())
+    {
+        Ok(task) => task,
+        Err(error) => {
+            if error == diesel::NotFound {
+                warn!(
+                    "The user tried to delete a task with the id {} that does not exist.",
+                    task_id
+                );
+                return Err(Status::NotFound);
+            }
+            error!(
+                "Could not get the task with the id {} from the database. The error was: {}",
+                task_id, error
+            );
+            return Err(Status::InternalServerError);
+        }
+    };
+
+    // if the tasks does not belong to the authenticated user, return an error
+    if task.owner != authenticated_user.id {
+        return Err(Status::Forbidden);
+    }
+
+    // convert the task DTO to a SimplifiedTask DTO
+    let simplified_task = SimplifiedTask {
+        id: task.id,
+        title: task.title,
+        created_at: task.created_at,
+        updated_at: task.updated_at,
+        done_at: task.done_at,
+    };
+
+    // return the simplified task DTO
+    Ok(Json(simplified_task))
 }

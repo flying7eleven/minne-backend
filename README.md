@@ -18,7 +18,7 @@ Build the backend container by going into the root directory of the repository a
 ### Use the stored access token to delete an own task (with the id 1)
 `curl --verbose -XDELETE http://127.0.0.1:5842/v1/task/1 -H "Content-Type: application/json" -H @access_token.tmp`
 
-### Use the stored access token to fetch all tasks of the logged-in user
+### Use the stored access token to fetch all tasks-ids of the logged-in user
 `curl --verbose http://127.0.0.1:5842/v1/task/list -H @access_token.tmp`
 
 ### Create a new Personal Access Token (PAT) for the logged-in user
@@ -28,6 +28,9 @@ Build the backend container by going into the root directory of the repository a
 `curl --verbose http://127.0.0.1:5842/v1/auth/pat -H "Content-Type: application/json" -H @pat_token.tmp -XDELETE`
 
 **Note**: To be able to use this call, you have to use the PAT you want to disable as the access token.
+
+### Get a task by its id with a users Personal Access Token (PAT)
+`curl --verbose http://127.0.0.1:5842/v1/task/4 -H "Content-Type: application/json" -H @pat_token.tmp`
 
 ## Environment Variables
 - `MINNE_LOGGING_LEVEL` - The verbosity of the logging. Default: `info` (options: `trace`, `debug`, `info`, `warn`, `error`)
