@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use rocket::request::{FromRequest, Outcome};
 use rocket::Request;
 
@@ -10,6 +11,18 @@ pub struct AuthenticatedUser {
     pub used_pat: String,
 }
 
+#[derive(Queryable, Clone)]
+pub struct PersonalAccessToken {
+    pub id: i32,
+    pub name: String,
+    pub token: String,
+    pub secret: String,
+    pub user_id: i32,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
+    pub disabled: bool,
+}
+
 #[derive(Debug)]
 pub enum AuthorizationError {
     /// Could not find any authentication header in the request.
@@ -20,11 +33,52 @@ pub enum AuthorizationError {
     InvalidToken,
 }
 
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for AuthenticatedUser {
-    type Error = AuthorizationError;
+impl<'r> AuthenticatedUser {
+    async fn pat_flow(
+        authorization_information: Vec<&str>,
+        request: &'r Request<'_>,
+    ) -> Outcome<AuthenticatedUser, AuthorizationError> {
+        use crate::fairings::MinneDatabaseConnection;
+        use crate::schema::personal_access_tokens::{disabled, secret, table, token};
+        use diesel::ExpressionMethods;
+        use diesel::{QueryDsl, RunQueryDsl};
+        use log::debug;
+        use rocket::http::Status;
 
-    async fn from_request(
+        // ensure that we know which flow we are using
+        debug!("Using the Personal Access Token authentication flow");
+
+        // get a database connection from the connection pool to fetch more token information
+        let db_connection_pool = request
+            .rocket()
+            .state::<MinneDatabaseConnection>()
+            .expect("Could not get a database connection from the pool");
+
+        // get the personal access token entry from the database based on the supplied token
+        let token_and_secret = authorization_information[1]
+            .split(':')
+            .collect::<Vec<&str>>();
+        let pat = table
+            .filter(token.eq(token_and_secret[0]))
+            .filter(secret.eq(token_and_secret[1]))
+            .filter(disabled.eq(false))
+            .first::<PersonalAccessToken>(&mut db_connection_pool.get().unwrap());
+
+        // if no pat could be found return an error
+        if pat.is_err() {
+            return Outcome::Failure((Status::Forbidden, AuthorizationError::InvalidToken));
+        }
+
+        // otherwise it seems that the user is authenticated and we can return the corresponding data structure
+        let unwrapped_pat = pat.unwrap();
+        Outcome::Success(AuthenticatedUser {
+            id: unwrapped_pat.user_id,
+            used_pat: unwrapped_pat.token,
+        })
+    }
+
+    async fn bearer_flow(
+        authorization_information: Vec<&str>,
         request: &'r Request<'_>,
     ) -> Outcome<AuthenticatedUser, AuthorizationError> {
         use crate::fairings::{BackendConfiguration, MinneDatabaseConnection};
@@ -33,6 +87,77 @@ impl<'r> FromRequest<'r> for AuthenticatedUser {
         use diesel::ExpressionMethods;
         use diesel::{QueryDsl, RunQueryDsl};
         use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
+        use log::{debug, error};
+        use rocket::http::Status;
+
+        // ensure that we know which flow we are using
+        debug!("Using the Bearer authentication flow");
+
+        // specify the parameter for the validation of the token
+        let mut validation_parameter = Validation::new(Algorithm::HS512);
+        validation_parameter.leeway = 5; // allow a time difference of max. 5 seconds
+        validation_parameter.validate_exp = true;
+        validation_parameter.validate_nbf = true;
+
+        // get the current backend configuration for the token signature psk
+        let backend_config = request.rocket().state::<BackendConfiguration>().map_or(
+            BackendConfiguration {
+                token_signature_psk: "".to_string(),
+                access_token_lifetime_in_seconds: 0,
+                refresh_token_lifetime_in_seconds: 0,
+                user_registration_enabled: false,
+            },
+            |config| config.clone(),
+        );
+
+        // get the 'validation' key for the token
+        let decoding_key = DecodingKey::from_secret(backend_config.token_signature_psk.as_ref());
+
+        // verify the validity of the token supplied in the header
+        let decoded_token = match decode::<Claims>(
+            authorization_information[1],
+            &decoding_key,
+            &validation_parameter,
+        ) {
+            Ok(token) => token,
+            Err(error) => {
+                error!(
+                    "The supplied token seems to be invalid. The error was: {}",
+                    error
+                );
+                return Outcome::Failure((Status::Forbidden, AuthorizationError::InvalidToken));
+            }
+        };
+
+        // get a database connection from the connection pool to fetch more user information
+        let db_connection_pool = request
+            .rocket()
+            .state::<MinneDatabaseConnection>()
+            .expect("Could not get a database connection from the pool");
+
+        // get the user id using diesel based on the supplied JWT tokens subject
+        let user_id = users
+            .select(id)
+            .filter(email.eq(decoded_token.claims.sub.clone()))
+            .first::<i32>(&mut db_connection_pool.get().unwrap())
+            .unwrap();
+
+        // if we reach this step, the validation was successful, and we can allow the user to
+        // call the route
+        return Outcome::Success(AuthenticatedUser {
+            id: user_id,
+            used_pat: "".to_string(),
+        });
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for AuthenticatedUser {
+    type Error = AuthorizationError;
+
+    async fn from_request(
+        request: &'r Request<'_>,
+    ) -> Outcome<AuthenticatedUser, AuthorizationError> {
         use log::error;
         use rocket::http::Status;
 
@@ -50,74 +175,18 @@ impl<'r> FromRequest<'r> for AuthenticatedUser {
                     ));
                 }
 
-                // ensure that the token type is marked as 'bearer' token
-                if authorization_information[0].to_lowercase() != "bearer" {
-                    error!("It seems that the authorization header is malformed. We expected as token type 'bearer' but got '{}'", authorization_information[0].to_lowercase());
-                    return Outcome::Failure((
-                        Status::Forbidden,
-                        AuthorizationError::MalformedAuthorizationHeader,
-                    ));
-                }
-
-                // specify the parameter for the validation of the token
-                let mut validation_parameter = Validation::new(Algorithm::HS512);
-                validation_parameter.leeway = 5; // allow a time difference of max. 5 seconds
-                validation_parameter.validate_exp = true;
-                validation_parameter.validate_nbf = true;
-
-                // get the current backend configuration for the token signature psk
-                let backend_config = request.rocket().state::<BackendConfiguration>().map_or(
-                    BackendConfiguration {
-                        token_signature_psk: "".to_string(),
-                        access_token_lifetime_in_seconds: 0,
-                        refresh_token_lifetime_in_seconds: 0,
-                        user_registration_enabled: false,
-                    },
-                    |config| config.clone(),
-                );
-
-                // get the 'validation' key for the token
-                let decoding_key =
-                    DecodingKey::from_secret(backend_config.token_signature_psk.as_ref());
-
-                // verify the validity of the token supplied in the header
-                let decoded_token = match decode::<Claims>(
-                    authorization_information[1],
-                    &decoding_key,
-                    &validation_parameter,
-                ) {
-                    Ok(token) => token,
-                    Err(error) => {
-                        error!(
-                            "The supplied token seems to be invalid. The error was: {}",
-                            error
-                        );
-                        return Outcome::Failure((
+                // we support bearer and pat authentication flows
+                return match authorization_information[0].to_lowercase().as_ref() {
+                    "bearer" => Self::bearer_flow(authorization_information, request).await,
+                    "pat" => Self::pat_flow(authorization_information, request).await,
+                    _ => {
+                        error!("It seems that the authorization header is malformed. We expected as token type 'bearer' or 'pat' but got '{}'", authorization_information[0].to_lowercase());
+                        Outcome::Failure((
                             Status::Forbidden,
-                            AuthorizationError::InvalidToken,
-                        ));
+                            AuthorizationError::MalformedAuthorizationHeader,
+                        ))
                     }
                 };
-
-                // get a database connection from the connection pool to fetch more user information
-                let db_connection_pool = request
-                    .rocket()
-                    .state::<MinneDatabaseConnection>()
-                    .expect("Could not get a database connection from the pool");
-
-                // get the user id using diesel based on the supplied JWT tokens subject
-                let user_id = users
-                    .select(id)
-                    .filter(email.eq(decoded_token.claims.sub.clone()))
-                    .first::<i32>(&mut db_connection_pool.get().unwrap())
-                    .unwrap();
-
-                // if we reach this step, the validation was successful, and we can allow the user to
-                // call the route
-                return Outcome::Success(AuthenticatedUser {
-                    id: user_id,
-                    used_pat: "".to_string(),
-                });
             }
             _ => {
                 error!("No authorization header could be found for an authenticated route!");
