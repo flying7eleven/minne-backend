@@ -33,12 +33,18 @@ pub struct SimplifiedTask {
 pub struct NewTask {
     pub title: String,
     pub owner: i32,
+    pub created_at: Option<NaiveDateTime>,
+    pub updated_at: Option<NaiveDateTime>,
 }
 
 #[derive(Deserialize)]
 pub struct NewTaskSuppliedData {
     /// The title for the new task.
     pub title: String,
+    /// An optional time when the task was created. If this is not supplied, the current time will be used
+    pub created_at: Option<NaiveDateTime>,
+    /// An optional time when the task was last modified. If this is not supplied, the current time will be used
+    pub updated_at: Option<NaiveDateTime>,
 }
 
 #[get("/task/list")]
@@ -103,6 +109,8 @@ pub async fn add_new_task(
     let new_task = NewTask {
         title: new_task_data.title.clone(),
         owner: authenticated_user.id,
+        created_at: new_task_data.created_at,
+        updated_at: new_task_data.updated_at,
     };
 
     // get a connection to the database for dealing with the request
