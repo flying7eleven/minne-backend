@@ -80,13 +80,13 @@ pub async fn add_new_task(
     db_connection_pool: &State<MinneDatabaseConnection>,
     authenticated_user: AuthenticatedUser,
     new_task_data: Json<NewTaskSuppliedData>,
-) -> Status {
+) -> Result<Json<i32>, Status> {
     use diesel::RunQueryDsl;
     use log::error;
 
     // if no text for the task was submitted, return an error
     if new_task_data.title.is_empty() {
-        return Status::BadRequest;
+        return Err(Status::BadRequest);
     }
 
     // prepare the DTO for creating the new task
@@ -103,21 +103,23 @@ pub async fn add_new_task(
                 "Could not get a connection from the database connection pool. The error was: {}",
                 error
             );
-            return Status::InternalServerError;
+            return Err(Status::InternalServerError);
         }
     };
 
-    // add the DTO to the database
-    let entries_added = diesel::insert_into(tasks::table)
+    // add the DTO to the database and get the generated id of the new task
+    let maybe_task_id = diesel::insert_into(tasks::table)
         .values(&new_task)
-        .execute(db_connection)
-        .unwrap();
+        .returning(tasks::id)
+        .get_result::<i32>(db_connection);
 
-    // check if the task was added to the database
-    if entries_added == 0 {
-        return Status::InternalServerError;
+    // check if the task was added to the database and return an error if we failed to do so
+    if maybe_task_id.is_err() {
+        return Err(Status::InternalServerError);
     }
-    Status::NoContent
+
+    // return the generated id for the corresponding task
+    Ok(Json(maybe_task_id.unwrap()))
 }
 
 #[delete("/task/<task_id>")]
