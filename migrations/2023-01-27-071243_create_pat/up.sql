@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS personal_access_tokens
     token      varchar(36)  NOT NULL, -- will ne an UUID
     secret     varchar(36)  NOT NULL,-- will ne an UUID
     user_id    int          NOT NULL,
-    created_at timestamp    NOT NULL DEFAULT NOW(),
-    updated_at timestamp    NOT NULL DEFAULT NOW(),
+    created_at timestamptz    NOT NULL DEFAULT NOW(),
+    updated_at timestamptz    NOT NULL DEFAULT NOW(),
     FOREIGN KEY (user_id) REFERENCES users (id)
 );
