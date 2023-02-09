@@ -7,9 +7,9 @@ diesel::table! {
         token -> Varchar,
         secret -> Varchar,
         user_id -> Int4,
+        disabled -> Bool,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
-        disabled -> Bool,
     }
 }
 
