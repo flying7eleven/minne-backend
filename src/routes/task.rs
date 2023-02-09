@@ -91,7 +91,7 @@ pub async fn get_all_task_ids_from_user(
     return Ok(Json(task_ids));
 }
 
-#[post("/task/new", data = "<new_task_data>")]
+#[post("/task", data = "<new_task_data>")]
 pub async fn add_new_task(
     db_connection_pool: &State<MinneDatabaseConnection>,
     authenticated_user: AuthenticatedUser,
