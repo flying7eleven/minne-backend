@@ -1,31 +1,31 @@
 use crate::fairings::MinneDatabaseConnection;
 use crate::guards::AuthenticatedUser;
 use crate::schema::tasks;
-use chrono::NaiveDateTime;
+use chrono::{DateTime, FixedOffset, Utc};
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket::{delete, get, post};
 use serde::{Deserialize, Serialize};
 
-#[derive(Queryable, Serialize)]
+#[derive(Queryable)]
 pub struct Task {
     pub id: i32,
     pub title: String,
     pub owner: i32,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
-    pub done_at: Option<NaiveDateTime>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub done_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Serialize)]
 pub struct SimplifiedTask {
     pub id: i32,
     pub title: String,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub done_at: Option<NaiveDateTime>,
+    pub done_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Insertable)]
@@ -33,8 +33,8 @@ pub struct SimplifiedTask {
 pub struct NewTask {
     pub title: String,
     pub owner: i32,
-    pub created_at: Option<NaiveDateTime>,
-    pub updated_at: Option<NaiveDateTime>,
+    pub created_at: Option<DateTime<Utc>>,
+    pub updated_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Deserialize)]
@@ -42,9 +42,9 @@ pub struct NewTaskSuppliedData {
     /// The title for the new task.
     pub title: String,
     /// An optional time when the task was created. If this is not supplied, the current time will be used
-    pub created_at: Option<NaiveDateTime>,
+    pub created_at: Option<DateTime<FixedOffset>>,
     /// An optional time when the task was last modified. If this is not supplied, the current time will be used
-    pub updated_at: Option<NaiveDateTime>,
+    pub updated_at: Option<DateTime<FixedOffset>>,
 }
 
 #[get("/task/list")]
@@ -109,8 +109,12 @@ pub async fn add_new_task(
     let new_task = NewTask {
         title: new_task_data.title.clone(),
         owner: authenticated_user.id,
-        created_at: new_task_data.created_at,
-        updated_at: new_task_data.updated_at,
+        created_at: new_task_data
+            .created_at
+            .map(|time| time.with_timezone(&Utc)),
+        updated_at: new_task_data
+            .updated_at
+            .map(|time| time.with_timezone(&Utc)),
     };
 
     // get a connection to the database for dealing with the request

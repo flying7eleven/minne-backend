@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use rocket::request::{FromRequest, Outcome};
 use rocket::Request;
 
@@ -18,9 +18,9 @@ pub struct PersonalAccessToken {
     pub token: String,
     pub secret: String,
     pub user_id: i32,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
     pub disabled: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug)]
