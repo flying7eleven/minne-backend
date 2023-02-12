@@ -5,7 +5,7 @@ use chrono::{DateTime, FixedOffset, Utc};
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::State;
-use rocket::{delete, get, post};
+use rocket::{delete, get, post, put};
 use serde::{Deserialize, Serialize};
 
 #[derive(Queryable)]
@@ -89,6 +89,11 @@ pub async fn get_all_task_ids_from_user(
 
     // return the fetch list of task ids
     return Ok(Json(task_ids));
+}
+
+#[put("/task")]
+pub async fn edit_task() -> Status {
+    Status::NotImplemented
 }
 
 #[post("/task", data = "<new_task_data>")]
