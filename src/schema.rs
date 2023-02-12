@@ -7,9 +7,9 @@ diesel::table! {
         token -> Varchar,
         secret -> Varchar,
         user_id -> Int4,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
         disabled -> Bool,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 
@@ -18,9 +18,9 @@ diesel::table! {
         id -> Int4,
         title -> Varchar,
         owner -> Int4,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
-        done_at -> Nullable<Timestamp>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+        done_at -> Nullable<Timestamptz>,
     }
 }
 
@@ -31,8 +31,8 @@ diesel::table! {
         last_name -> Varchar,
         email -> Varchar,
         password_hash -> Varchar,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 

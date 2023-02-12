@@ -12,8 +12,11 @@ Build the backend container by going into the root directory of the repository a
 ### Get an authentication token (and store it in `access_token.tmp`)
 `echo -n "Authorization: Bearer " > access_token.tmp && curl --silent http://127.0.0.1:5842/v1/auth/login -H "Content-Type: application/json" -d @example_payloads/login.json | grep -oP '(?<=accessToken":")[^"]*' >> access_token.tmp`
 
-### Use the stored access token and create a new task for the user who is logged in
-`curl --verbose http://127.0.0.1:5842/v1/task/new -H "Content-Type: application/json" -H @access_token.tmp --data "{\"title\": \"Some new task\"}"`
+### Use the stored access token and create a new task for the user who is logged in (simple)
+`curl --verbose http://127.0.0.1:5842/v1/task -H "Content-Type: application/json" -H @access_token.tmp --data "{\"title\": \"Some new task\"}"`
+
+### Use the stored access token and create a new task for the user who is logged in (extended)
+`curl --verbose http://127.0.0.1:5842/v1/task -H "Content-Type: application/json" -H @access_token.tmp --data "{\"title\": \"Some new task\",\"created_at\":\"2023-02-09T14:58:02Z\",\"updated_at\":\"2023-02-09T14:58:02Z\"}"`
 
 ### Use the stored access token to delete an own task (with the id 1)
 `curl --verbose -XDELETE http://127.0.0.1:5842/v1/task/1 -H "Content-Type: application/json" -H @access_token.tmp`

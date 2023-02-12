@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use rocket::request::{FromRequest, Outcome};
 use rocket::Request;
 
@@ -18,9 +18,9 @@ pub struct PersonalAccessToken {
     pub token: String,
     pub secret: String,
     pub user_id: i32,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
     pub disabled: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug)]
@@ -42,7 +42,7 @@ impl<'r> AuthenticatedUser {
         use crate::schema::personal_access_tokens::{disabled, secret, table, token};
         use diesel::ExpressionMethods;
         use diesel::{QueryDsl, RunQueryDsl};
-        use log::debug;
+        use log::{debug, trace};
         use rocket::http::Status;
 
         // ensure that we know which flow we are using
@@ -66,6 +66,12 @@ impl<'r> AuthenticatedUser {
 
         // if no pat could be found return an error
         if pat.is_err() {
+            debug!("There was no PAT token found in the database which matches the supplied token and is not disabled");
+            trace!(
+                "The token was {} and its secret was {}",
+                token_and_secret[0],
+                token_and_secret[1]
+            );
             return Outcome::Failure((Status::Forbidden, AuthorizationError::InvalidToken));
         }
 
