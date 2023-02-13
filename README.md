@@ -35,6 +35,9 @@ Build the backend container by going into the root directory of the repository a
 ### Get a task by its id with a users Personal Access Token (PAT)
 `curl --verbose http://127.0.0.1:5842/v1/task/4 -H "Content-Type: application/json" -H @pat_token.tmp`
 
+### Update the title and update_time of the task with the id 4 using a users Personal Access Token (PAT)
+`curl --verbose http://127.0.0.1:5842/v1/task/4 -H "Content-Type: application/json" -H @pat_token.tmp -XPUT --data "{\"title\": \"Some new title\",\"updated_at\":\"2023-01-01T00:00:01Z\"}"`
+
 ## Environment Variables
 - `MINNE_LOGGING_LEVEL` - The verbosity of the logging. Default: `info` (options: `trace`, `debug`, `info`, `warn`, `error`)
 - `MINNE_DB_CONNECTION` - The connection string for the database (e.g. `postgres://postgres:postgres@localhost:5432/minne`)
