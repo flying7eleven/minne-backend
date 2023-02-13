@@ -47,6 +47,12 @@ pub struct NewTaskSuppliedData {
     pub updated_at: Option<DateTime<FixedOffset>>,
 }
 
+#[derive(Deserialize)]
+pub struct TaskEditData {
+    pub title: Option<String>,
+    pub updated_at: Option<DateTime<FixedOffset>>,
+}
+
 #[get("/task/list")]
 pub async fn get_all_task_ids_from_user(
     db_connection_pool: &State<MinneDatabaseConnection>,
@@ -91,9 +97,79 @@ pub async fn get_all_task_ids_from_user(
     return Ok(Json(task_ids));
 }
 
-#[put("/task")]
-pub async fn edit_task() -> Status {
-    Status::NotImplemented
+#[put("/task/<task_id>", data = "<task_change_data>")]
+pub async fn edit_task(
+    db_connection_pool: &State<MinneDatabaseConnection>,
+    authenticated_user: AuthenticatedUser,
+    task_change_data: Json<TaskEditData>,
+    task_id: i32,
+) -> Status {
+    use crate::diesel::ExpressionMethods;
+    use crate::diesel::QueryDsl;
+    use crate::diesel::RunQueryDsl;
+    use crate::schema::tasks::dsl::{id, owner};
+    use crate::schema::tasks::table;
+    use log::error;
+
+    // if non of the fields for the task were supplied, return an error
+    if task_change_data.title.is_none() && task_change_data.updated_at.is_none() {
+        return Status::BadRequest;
+    }
+
+    // get a connection to the database for dealing with the request
+    let db_connection = &mut match db_connection_pool.get() {
+        Ok(connection) => connection,
+        Err(error) => {
+            error!(
+                "Could not get a connection from the database connection pool. The error was: {}",
+                error
+            );
+            return Status::InternalServerError;
+        }
+    };
+
+    // return an error if the task with the supplied id does not exist or does not belong to the authenticated user
+    if table
+        .filter(id.eq(task_id))
+        .filter(owner.eq(authenticated_user.id))
+        .first::<Task>(db_connection)
+        .is_err()
+    {
+        return Status::NotFound;
+    }
+
+    // if the title was supplied, update the task with the new title
+    if let Some(new_title) = &task_change_data.title {
+        if diesel::update(table.filter(id.eq(task_id)))
+            .set(tasks::title.eq(new_title))
+            .execute(db_connection)
+            .is_err()
+        {
+            error!(
+                "Could not update the title of the task with id {}.",
+                task_id
+            );
+            return Status::InternalServerError;
+        }
+    }
+
+    // if a updated_at time was supplied, update the task with the new updated_at time
+    if let Some(new_updated_at) = &task_change_data.updated_at {
+        if diesel::update(table.filter(id.eq(task_id)))
+            .set(tasks::updated_at.eq(new_updated_at.with_timezone(&Utc)))
+            .execute(db_connection)
+            .is_err()
+        {
+            error!(
+                "Could not update the updated_at time of the task with id {}.",
+                task_id
+            );
+            return Status::InternalServerError;
+        }
+    }
+
+    // if we reach this place, we executed all the changes successfully
+    return Status::NoContent;
 }
 
 #[post("/task", data = "<new_task_data>")]
