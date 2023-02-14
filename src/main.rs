@@ -72,10 +72,9 @@ async fn main() {
     use log::{debug, error, info};
     use minne_backend::fairings::{BackendConfiguration, MinneDatabaseConnection, NoCacheFairing};
     use minne_backend::routes::{
-        auth::create_new_pat, auth::disable_pat, auth::get_authentication_token,
-        health::check_backend_health, task::add_new_task, task::delete_task, task::edit_task,
-        task::get_all_task_ids_from_user, task::get_task, user::create_new_user,
-        version::get_backend_version,
+        auth::disable_pat, auth::get_authentication_token, health::check_backend_health,
+        task::add_new_task, task::delete_task, task::edit_task, task::get_all_task_ids_from_user,
+        task::get_task, user::create_new_user, version::get_backend_version,
     };
     use rocket::config::{Shutdown, Sig};
     use rocket::figment::{
@@ -255,7 +254,6 @@ async fn main() {
                 add_new_task,
                 delete_task,
                 get_all_task_ids_from_user,
-                create_new_pat,
                 disable_pat,
                 get_task,
                 edit_task,

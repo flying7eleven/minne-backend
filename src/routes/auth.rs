@@ -148,13 +148,11 @@ pub async fn disable_pat(
     Status::NoContent
 }
 
-#[post("/auth/pat", data = "<new_pata_data>")]
 pub async fn create_new_pat(
     db_connection_pool: &State<MinneDatabaseConnection>,
     authenticated_user: AuthenticatedUser,
     new_pata_data: Json<NewPersonalAccessTokenData>,
 ) -> Result<Json<PersonalAccessTokenResponse>, Status> {
-    use crate::schema::personal_access_tokens;
     use diesel::RunQueryDsl;
     use log::error;
     use uuid::Uuid;
