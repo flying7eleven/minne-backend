@@ -24,9 +24,6 @@ Build the backend container by going into the root directory of the repository a
 ### Use the stored access token to fetch all tasks-ids of the logged-in user
 `curl --verbose http://127.0.0.1:5842/v1/task/list -H @access_token.tmp`
 
-### Create a new Personal Access Token (PAT) for the logged-in user
-`echo -n "Authorization: PAT " > pat_token.tmp && curl --verbose http://127.0.0.1:5842/v1/auth/pat -H "Content-Type: application/json" -H @access_token.tmp --data "{\"name\": \"A descriptive name for the PAT\"}" | grep -oP '(?<=token":")[^"]*|(?<=secret":")[^"]*' | sed -z 's/\n/:/' >> pat_token.tmp`
-
 ### Permanently disable a Personal Access Token (PAT)
 `curl --verbose http://127.0.0.1:5842/v1/auth/pat -H "Content-Type: application/json" -H @pat_token.tmp -XDELETE`
 
