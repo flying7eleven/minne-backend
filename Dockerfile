@@ -27,6 +27,12 @@ COPY --from=build --chown=1001 /usr/src/app/target/release/minne-backend /usr/lo
 # set the work dir for the backend
 WORKDIR /usr/local/bin
 
+# create a directory for the templates
+RUN mkdir -p /usr/local/share/minne-backend/templates
+
+# copy the templates to the created directory
+COPY --from=build --chown=1001 /usr/src/app/templates/* /usr/local/share/minne-backend/templates/
+
 # configure the user(-id) for the running process
 USER 1001
 
