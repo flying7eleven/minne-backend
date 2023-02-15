@@ -198,6 +198,7 @@ async fn main() {
     };
 
     // rocket configuration figment
+    #[allow(unused_mut)]
     let mut rocket_configuration_figment = RocketConfig::figment()
         .merge(("databases", map!["saker" => minne_database_config]))
         .merge(("port", 5842))
