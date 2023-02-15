@@ -151,53 +151,6 @@ pub async fn disable_pat(
     Status::NoContent
 }
 
-pub async fn create_new_pat(
-    db_connection_pool: &State<MinneDatabaseConnection>,
-    authenticated_user: AuthenticatedUser,
-    new_pata_data: Json<NewPersonalAccessTokenData>,
-) -> Result<Json<PersonalAccessTokenResponse>, Status> {
-    use diesel::RunQueryDsl;
-    use log::error;
-    use uuid::Uuid;
-
-    // get a connection to the database for dealing with the request
-    let db_connection = &mut match db_connection_pool.get() {
-        Ok(connection) => connection,
-        Err(error) => {
-            error!(
-                "Could not get a connection from the database connection pool. The error was: {}",
-                error
-            );
-            return Err(Status::InternalServerError);
-        }
-    };
-
-    // create a new personal access token for the user
-    let new_pat = NewPersonalAccessToken {
-        name: new_pata_data.name.clone(),
-        user_id: authenticated_user.id,
-        token: Uuid::new_v4().to_string(),
-        secret: Uuid::new_v4().to_string(),
-    };
-
-    // try to insert the new personal access token into the database
-    let entries_added = diesel::insert_into(personal_access_tokens::table)
-        .values(&new_pat)
-        .execute(db_connection)
-        .unwrap();
-
-    // if we did not add exactly one entry, return an error
-    if entries_added != 1 {
-        return Err(Status::InternalServerError);
-    }
-
-    // return the token as well as the corresponding secret to the calling party
-    Ok(Json(PersonalAccessTokenResponse {
-        token: new_pat.token,
-        secret: new_pat.secret,
-    }))
-}
-
 #[derive(FromForm)]
 pub struct LoginFromForm {
     username: String,
@@ -207,7 +160,6 @@ pub struct LoginFromForm {
 #[post("/auth/app", data = "<credentials>")]
 pub async fn authenticate_app_with_pat(
     db_connection_pool: &State<MinneDatabaseConnection>,
-    config: &State<BackendConfiguration>,
     credentials: Form<LoginFromForm>,
 ) -> Result<Redirect, Status> {
     use crate::routes::user::User;
