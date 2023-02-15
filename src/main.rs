@@ -1,6 +1,9 @@
 use diesel::PgConnection;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations};
 use log::LevelFilter;
+use rocket::figment::map;
+use rocket::get;
+use rocket_dyn_templates::Template;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 
@@ -67,14 +70,23 @@ fn setup_logging(logging_level: LevelFilter) {
         .unwrap();
 }
 
+#[get("/")]
+fn show_login_page_to_user() -> Template {
+    let context = map! {
+        "title" => "Minne",
+    };
+    Template::render("login_from_app", &context)
+}
+
 #[rocket::main]
 async fn main() {
     use log::{debug, error, info};
     use minne_backend::fairings::{BackendConfiguration, MinneDatabaseConnection, NoCacheFairing};
     use minne_backend::routes::{
-        auth::disable_pat, auth::get_authentication_token, health::check_backend_health,
-        task::add_new_task, task::delete_task, task::edit_task, task::get_all_task_ids_from_user,
-        task::get_task, user::create_new_user, version::get_backend_version,
+        auth::authenticate_app_with_pat, auth::disable_pat, auth::get_authentication_token,
+        health::check_backend_health, task::add_new_task, task::delete_task, task::edit_task,
+        task::get_all_task_ids_from_user, task::get_task, user::create_new_user,
+        version::get_backend_version,
     };
     use rocket::config::{Shutdown, Sig};
     use rocket::figment::{
@@ -242,6 +254,7 @@ async fn main() {
     let _ = rocket::custom(rocket_configuration_figment)
         .attach(cors_header)
         .attach(no_cache_header)
+        .attach(Template::fairing())
         .manage(backend_config)
         .manage(MinneDatabaseConnection::from(db_connection_pool))
         .mount(
@@ -257,8 +270,10 @@ async fn main() {
                 disable_pat,
                 get_task,
                 edit_task,
+                authenticate_app_with_pat,
             ],
         )
+        .mount("/", routes![show_login_page_to_user,])
         .launch()
         .await;
 }
