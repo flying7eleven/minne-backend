@@ -198,7 +198,7 @@ async fn main() {
     };
 
     // rocket configuration figment
-    let rocket_configuration_figment = RocketConfig::figment()
+    let mut rocket_configuration_figment = RocketConfig::figment()
         .merge(("databases", map!["saker" => minne_database_config]))
         .merge(("port", 5842))
         .merge(("address", std::net::Ipv4Addr::new(0, 0, 0, 0)))
@@ -217,6 +217,13 @@ async fn main() {
                 __non_exhaustive: (),
             },
         ));
+
+    // if we are in debug mode, we are using the local template directory; otherwise use the installation directory
+    #[cfg(not(debug_assertions))]
+    {
+        rocket_configuration_figment = rocket_configuration_figment
+            .merge(("template_dir", "/usr/local/share/minne-backend/templates"));
+    }
 
     // prepare the fairing for the CORS headers
     let allowed_origins = AllowedOrigins::All;
