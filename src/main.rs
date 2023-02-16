@@ -232,9 +232,9 @@ async fn main() {
 
     // if we are in debug mode, we are using the local static file directory; otherwise use the installation directory
     let static_file_directory = if cfg!(debug_assertions) {
-        "templates/static"
+        "static"
     } else {
-        "/usr/local/share/minne-backend/templates/static"
+        "/usr/local/share/minne-backend/static"
     };
 
     // prepare the fairing for the CORS headers
