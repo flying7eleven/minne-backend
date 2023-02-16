@@ -94,6 +94,7 @@ async fn main() {
         util::map,
         value::{Map, Value},
     };
+    use rocket::fs::FileServer;
     use rocket::http::Method;
     use rocket::routes;
     use rocket::Config as RocketConfig;
@@ -227,6 +228,13 @@ async fn main() {
             .merge(("template_dir", "/usr/local/share/minne-backend/templates"));
     }
 
+    // if we are in debug mode, we are using the local static file directory; otherwise use the installation directory
+    let static_file_directory = if cfg!(debug_assertions) {
+        "templates/static"
+    } else {
+        "/usr/local/share/minne-backend/templates/static"
+    };
+
     // prepare the fairing for the CORS headers
     let allowed_origins = AllowedOrigins::All;
     let cors_header = rocket_cors::CorsOptions {
@@ -283,6 +291,7 @@ async fn main() {
             ],
         )
         .mount("/", routes![show_login_page_to_user,])
+        .mount("/static", FileServer::from(static_file_directory))
         .launch()
         .await;
 }

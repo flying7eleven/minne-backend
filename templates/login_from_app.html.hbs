@@ -1,12 +1,21 @@
 <html>
 <head>
     <title>Minne App Login</title>
+    <link href="static/minne.css" rel="stylesheet" type="text/css" media="all" />
 </head>
 <body>
+<div id="logo"></div>
+<div id="welcome">Welcome to Minne</div>
 <form action="/v1/auth/app" method="post">
-    <input type="text" name="username" placeholder="Username">
-    <input type="password" name="password" placeholder="Password">
-    <input type="submit" value="Login">
+    <div>
+        <label for="username">Email address</label>
+        <input class="input-field" type="email" name="username" id="username" placeholder="Email address" required>
+    </div>
+    <div>
+        <label for="password">Password</label>
+        <input class="input-field" type="password" name="password" id="password" placeholder="Password" required>
+    </div>
+    <input class="submit-button" type="submit" value="Sign in">
 </form>
 </body>
 </html>

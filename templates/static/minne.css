@@ -1,0 +1,29 @@
+body {
+    color: #696969;
+    background-color: #ffffff;
+    font-family: sans-serif;
+}
+
+.submit-button {
+    background-color: #696969;
+    color: #aaaaaa;
+    border: none;
+    padding: 8px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 16px;
+}
+
+.input-field {
+    background-color: #ffffff;
+    border: 1px solid #696969;
+    border-radius: 4px;
+    padding: 8px 16px;
+    margin: 8px 0;
+    display: inline-block;
+    box-sizing: border-box;
+}
