@@ -155,6 +155,7 @@ pub async fn disable_pat(
 pub struct LoginFromForm {
     username: String,
     password: String,
+    login_process_id: String,
 }
 
 #[post("/auth/app", data = "<credentials>")]
@@ -260,8 +261,8 @@ pub async fn authenticate_app_with_pat(
 
     // return the token as well as the corresponding secret to the calling party
     Ok(Redirect::to(format!(
-        "minne-app://auth?token={}&secret={}",
-        new_pat.token, new_pat.secret
+        "minne-app://auth?token={}&secret={}&process_id={}",
+        new_pat.token, new_pat.secret, credentials.login_process_id
     )))
 }
 

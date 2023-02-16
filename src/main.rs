@@ -73,8 +73,10 @@ fn setup_logging(logging_level: LevelFilter) {
 
 #[get("/")]
 fn show_login_page_to_user() -> Template {
+    use uuid::Uuid;
     let context = map! {
-        "title" => "Minne",
+        "title" => "Minne iOS App Login".to_owned(),
+        "login_process_id" => Uuid::new_v4().to_string(),
     };
     Template::render("login_from_app", &context)
 }

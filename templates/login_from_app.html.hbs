@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>Minne App Login</title>
+    <title>{{title}}</title>
     <link href="static/minne.css" rel="stylesheet" type="text/css" media="all" />
     <link rel="icon" type="image/x-icon" href="static/favicon.ico" />
 </head>
@@ -16,6 +16,7 @@
         <label for="password">Password</label>
         <input class="input-field" type="password" name="password" id="password" placeholder="Password" required>
     </div>
+    <input type="hidden" id="login-process-id" name="login_process_id" value="{{login_process_id}}">
     <input class="submit-button" type="submit" value="Sign in">
 </form>
 </body>
