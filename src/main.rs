@@ -65,6 +65,7 @@ fn setup_logging(logging_level: LevelFilter) {
         .level_for("want", LevelFilter::Off)
         .level_for("mio", LevelFilter::Off)
         .level_for("rocket_dyn_templates", LevelFilter::Error)
+        .level_for("handlebars::render", LevelFilter::Error)
         .level_for("rocket", LevelFilter::Error)
         .level_for("_", LevelFilter::Error)
         .apply()
