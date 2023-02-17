@@ -2,8 +2,11 @@ use crate::fairings::{BackendConfiguration, MinneDatabaseConnection};
 use crate::guards::AuthenticatedUser;
 use crate::schema::personal_access_tokens;
 use chrono::NaiveDateTime;
+use rocket::form::Form;
 use rocket::http::Status;
+use rocket::response::Redirect;
 use rocket::serde::json::Json;
+use rocket::FromForm;
 use rocket::State;
 use rocket::{delete, post};
 use serde::{Deserialize, Serialize};
@@ -148,14 +151,22 @@ pub async fn disable_pat(
     Status::NoContent
 }
 
-#[post("/auth/pat", data = "<new_pata_data>")]
-pub async fn create_new_pat(
+#[derive(FromForm)]
+pub struct LoginFromForm {
+    username: String,
+    password: String,
+    login_process_id: String,
+}
+
+#[post("/auth/app", data = "<credentials>")]
+pub async fn authenticate_app_with_pat(
     db_connection_pool: &State<MinneDatabaseConnection>,
-    authenticated_user: AuthenticatedUser,
-    new_pata_data: Json<NewPersonalAccessTokenData>,
-) -> Result<Json<PersonalAccessTokenResponse>, Status> {
-    use crate::schema::personal_access_tokens;
-    use diesel::RunQueryDsl;
+    credentials: Form<LoginFromForm>,
+) -> Result<Redirect, Status> {
+    use crate::routes::user::User;
+    use crate::schema::users::dsl::{email, users};
+    use bcrypt::verify;
+    use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
     use log::error;
     use uuid::Uuid;
 
@@ -171,15 +182,73 @@ pub async fn create_new_pat(
         }
     };
 
-    // create a new personal access token for the user
+    // try to get the user record for the supplied username
+    let supplied_username = credentials.username.clone();
+    let maybe_user_result = db_connection
+        .build_transaction()
+        .read_only()
+        .run::<_, diesel::result::Error, _>(move |connection| {
+            if let Ok(found_users) = users
+                .filter(email.eq(supplied_username))
+                .load::<User>(connection)
+            {
+                // if we did not get exactly one user, return an 'error'
+                if found_users.len() != 1 {
+                    return Err(diesel::result::Error::NotFound);
+                }
+
+                // return the found user
+                return Ok(found_users[0].clone());
+            }
+
+            //
+            return Err(diesel::result::Error::NotFound); // TODO: not the real error
+        });
+
+    // try to get the actual user object or delay a bit and then return with the corresponding error
+    let user = match maybe_user_result {
+        Ok(user) => user,
+        Err(_) => {
+            // ensure that we know what happened
+            error!(
+                "Could not get the user record for '{}'",
+                credentials.username
+            );
+
+            // just slow down the process to prevent easy checking if a user name exists or not
+            let _ = verify(
+                "some_password",
+                "$2y$12$7xMzqvnHyizkumZYpIRXheGMAqDKVo8HKtpmQSn51JUfY0N2VN4ua",
+            );
+
+            // finally we can tell teh user that he/she is not authorized
+            return Err(Status::Unauthorized);
+        }
+    };
+
+    // check if the supplied password matches the one we stored in the database using the same bcrypt
+    // parameters
+    match verify(&credentials.password, user.password_hash.as_str()) {
+        Ok(is_password_correct) => {
+            if !is_password_correct {
+                return Err(Status::Unauthorized);
+            }
+        }
+        Err(error) => {
+            error!("Could not verify the supplied password with the one stored in the database. The error was: {}", error);
+            return Err(Status::InternalServerError);
+        }
+    }
+
+    // since the login seems to be valid create a new personal access token for that user
     let new_pat = NewPersonalAccessToken {
-        name: new_pata_data.name.clone(),
-        user_id: authenticated_user.id,
+        name: "App Login".to_string(),
+        user_id: user.id,
         token: Uuid::new_v4().to_string(),
         secret: Uuid::new_v4().to_string(),
     };
 
-    // try to insert the new personal access token into the database
+    // store that token in the database
     let entries_added = diesel::insert_into(personal_access_tokens::table)
         .values(&new_pat)
         .execute(db_connection)
@@ -191,10 +260,10 @@ pub async fn create_new_pat(
     }
 
     // return the token as well as the corresponding secret to the calling party
-    Ok(Json(PersonalAccessTokenResponse {
-        token: new_pat.token,
-        secret: new_pat.secret,
-    }))
+    Ok(Redirect::to(format!(
+        "minne-app://auth?token={}&secret={}&process_id={}",
+        new_pat.token, new_pat.secret, credentials.login_process_id
+    )))
 }
 
 #[post("/auth/login", data = "<credentials>")]

@@ -1,6 +1,9 @@
 use diesel::PgConnection;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations};
 use log::LevelFilter;
+use rocket::figment::map;
+use rocket::get;
+use rocket_dyn_templates::Template;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 
@@ -61,10 +64,22 @@ fn setup_logging(logging_level: LevelFilter) {
         .level_for("reqwest", LevelFilter::Off)
         .level_for("want", LevelFilter::Off)
         .level_for("mio", LevelFilter::Off)
+        .level_for("rocket_dyn_templates", LevelFilter::Error)
+        .level_for("handlebars::render", LevelFilter::Error)
         .level_for("rocket", LevelFilter::Error)
         .level_for("_", LevelFilter::Error)
         .apply()
         .unwrap();
+}
+
+#[get("/")]
+fn show_login_page_to_user() -> Template {
+    use uuid::Uuid;
+    let context = map! {
+        "title" => "Minne iOS App Login".to_owned(),
+        "login_process_id" => Uuid::new_v4().to_string(),
+    };
+    Template::render("login_from_app", &context)
 }
 
 #[rocket::main]
@@ -72,7 +87,7 @@ async fn main() {
     use log::{debug, error, info};
     use minne_backend::fairings::{BackendConfiguration, MinneDatabaseConnection, NoCacheFairing};
     use minne_backend::routes::{
-        auth::create_new_pat, auth::disable_pat, auth::get_authentication_token,
+        auth::authenticate_app_with_pat, auth::disable_pat, auth::get_authentication_token,
         health::check_backend_health, task::add_new_task, task::delete_task, task::edit_task,
         task::get_all_task_ids_from_user, task::get_task, user::create_new_user,
         version::get_backend_version,
@@ -82,6 +97,7 @@ async fn main() {
         util::map,
         value::{Map, Value},
     };
+    use rocket::fs::FileServer;
     use rocket::http::Method;
     use rocket::routes;
     use rocket::Config as RocketConfig;
@@ -187,7 +203,8 @@ async fn main() {
     };
 
     // rocket configuration figment
-    let rocket_configuration_figment = RocketConfig::figment()
+    #[allow(unused_mut)]
+    let mut rocket_configuration_figment = RocketConfig::figment()
         .merge(("databases", map!["saker" => minne_database_config]))
         .merge(("port", 5842))
         .merge(("address", std::net::Ipv4Addr::new(0, 0, 0, 0)))
@@ -206,6 +223,20 @@ async fn main() {
                 __non_exhaustive: (),
             },
         ));
+
+    // if we are in debug mode, we are using the local template directory; otherwise use the installation directory
+    #[cfg(not(debug_assertions))]
+    {
+        rocket_configuration_figment = rocket_configuration_figment
+            .merge(("template_dir", "/usr/local/share/minne-backend/templates"));
+    }
+
+    // if we are in debug mode, we are using the local static file directory; otherwise use the installation directory
+    let static_file_directory = if cfg!(debug_assertions) {
+        "static"
+    } else {
+        "/usr/local/share/minne-backend/static"
+    };
 
     // prepare the fairing for the CORS headers
     let allowed_origins = AllowedOrigins::All;
@@ -243,6 +274,7 @@ async fn main() {
     let _ = rocket::custom(rocket_configuration_figment)
         .attach(cors_header)
         .attach(no_cache_header)
+        .attach(Template::fairing())
         .manage(backend_config)
         .manage(MinneDatabaseConnection::from(db_connection_pool))
         .mount(
@@ -255,12 +287,14 @@ async fn main() {
                 add_new_task,
                 delete_task,
                 get_all_task_ids_from_user,
-                create_new_pat,
                 disable_pat,
                 get_task,
                 edit_task,
+                authenticate_app_with_pat,
             ],
         )
+        .mount("/", routes![show_login_page_to_user,])
+        .mount("/static", FileServer::from(static_file_directory))
         .launch()
         .await;
 }

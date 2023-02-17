@@ -55,6 +55,11 @@ git = "https://github.com/lawliet89/rocket_cors" # should be replaced with a wor
 branch = "master"
 default-features = false
 
+[dependencies.rocket_dyn_templates]
+version = "0.1.0-rc.2"
+default-features = false
+features = ["handlebars"]
+
 [dependencies.serde]
 version = "1.0.152"
 default-features = false
@@ -65,6 +70,6 @@ default-features = false
 features = ["v4"]
 
 [build-dependencies.vergen]
-version = "7.5.0"
+version = "7.5.1"
 default-features = false
 features = ["git", "rustc", "build", "cargo"]
