@@ -98,7 +98,8 @@ pub async fn get_all_tasks_which_are_not_known(
 
     // ensure we log how many tasks we found to be sure that the filtering works
     debug!(
-        "Found {} tasks for the user before filtering them",
+        "Found {} tasks for the user {} before filtering them",
+        authenticated_user.id,
         tasks.len()
     );
 
@@ -111,7 +112,8 @@ pub async fn get_all_tasks_which_are_not_known(
 
     // ensure we log how many tasks we have after filtering them to be sure that the filtering works
     debug!(
-        "Found {} tasks for the user after filtering them",
+        "Found {} tasks for the user {} after filtering them",
+        authenticated_user.id,
         task_ids.len()
     );
 
