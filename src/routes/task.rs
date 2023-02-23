@@ -53,6 +53,72 @@ pub struct TaskEditData {
     pub updated_at: Option<DateTime<FixedOffset>>,
 }
 
+#[derive(Deserialize)]
+pub struct UnknownTasksRequest {
+    pub known_task_ids: Vec<i32>,
+}
+
+#[post("/task/filter", data = "<unknown_task_request>")]
+pub async fn get_all_tasks_which_are_not_known(
+    db_connection_pool: &State<MinneDatabaseConnection>,
+    authenticated_user: AuthenticatedUser,
+    unknown_task_request: Json<UnknownTasksRequest>,
+) -> Result<Json<Vec<i32>>, Status> {
+    use diesel::ExpressionMethods;
+    use diesel::QueryDsl;
+    use diesel::RunQueryDsl;
+    use log::{debug, error};
+
+    // get a connection to the database for dealing with the request
+    let db_connection = &mut match db_connection_pool.get() {
+        Ok(connection) => connection,
+        Err(error) => {
+            error!(
+                "Could not get a connection from the database connection pool. The error was: {}",
+                error
+            );
+            return Err(Status::InternalServerError);
+        }
+    };
+
+    // get all tasks of the authenticated user from the database
+    let tasks = match tasks::table
+        .filter(tasks::owner.eq(authenticated_user.id))
+        .load::<Task>(db_connection)
+    {
+        Ok(tasks) => tasks,
+        Err(error) => {
+            error!(
+                "Could not get all tasks of the user from the database. The error was: {}",
+                error
+            );
+            return Err(Status::InternalServerError);
+        }
+    };
+
+    // ensure we log how many tasks we found to be sure that the filtering works
+    debug!(
+        "Found {} tasks for the user before filtering them",
+        tasks.len()
+    );
+
+    // we do only need the ids of the tasks which are not already known and nothing else
+    let task_ids: Vec<i32> = tasks
+        .into_iter()
+        .map(|task| task.id)
+        .filter(|item| !unknown_task_request.known_task_ids.contains(item))
+        .collect();
+
+    // ensure we log how many tasks we have after filtering them to be sure that the filtering works
+    debug!(
+        "Found {} tasks for the user after filtering them",
+        task_ids.len()
+    );
+
+    // return the fetch list of task ids
+    return Ok(Json(task_ids));
+}
+
 #[get("/task/list")]
 pub async fn get_all_task_ids_from_user(
     db_connection_pool: &State<MinneDatabaseConnection>,
