@@ -16,7 +16,7 @@ default-features = false
 features = ["std"]
 
 [dependencies.chrono]
-version = "0.4.23"
+version = "0.4.24"
 default-features = false
 features = ["clock", "serde"]
 
@@ -29,12 +29,16 @@ features = ["postgres", "r2d2", "chrono"]
 version = "2.0.0"
 default-features = false
 
+[dependencies.diesel_derives]
+version = "2.0.2"
+default-features = false
+
 [dependencies.fern]
-version = "0.6.1"
+version = "0.6.2"
 default-features = false
 
 [dependencies.jsonwebtoken]
-version = "8.2.0"
+version = "8.3.0"
 default-features = false
 
 [dependencies.log]
@@ -46,7 +50,7 @@ version = "0.8.10"
 default-features = false
 
 [dependencies.rocket]
-version = "0.5.0-rc.2"
+version = "0.5.0-rc.3"
 default-features = false
 features = ["json"]
 
@@ -56,12 +60,12 @@ branch = "master"
 default-features = false
 
 [dependencies.rocket_dyn_templates]
-version = "0.1.0-rc.2"
+version = "0.1.0-rc.3"
 default-features = false
 features = ["handlebars"]
 
 [dependencies.serde]
-version = "1.0.152"
+version = "1.0.159"
 default-features = false
 
 [dependencies.uuid]
@@ -70,6 +74,6 @@ default-features = false
 features = ["v4"]
 
 [build-dependencies.vergen]
-version = "7.5.1"
+version = "8.1.1"
 default-features = false
-features = ["git", "rustc", "build", "cargo"]
+features = ["git", "git2", "rustc", "build", "cargo"]

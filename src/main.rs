@@ -123,7 +123,7 @@ async fn main() {
     // just inform the user that we are starting up
     info!(
         "Starting Minne backend ({}, build with rustc {})...",
-        env!("VERGEN_GIT_SEMVER"),
+        env!("VERGEN_GIT_DESCRIBE"),
         env!("VERGEN_RUSTC_SEMVER")
     );
 

@@ -19,10 +19,10 @@ pub struct VersionInformation {
 #[get("/version")]
 pub async fn get_backend_version() -> Json<VersionInformation> {
     Json(VersionInformation {
-        backend_version: env!("VERGEN_GIT_SEMVER"),
+        backend_version: env!("VERGEN_GIT_DESCRIBE"),
         backend_arch: env!("VERGEN_CARGO_TARGET_TRIPLE"),
         rustc_version: env!("VERGEN_RUSTC_SEMVER"),
         build_date: env!("VERGEN_BUILD_DATE"),
-        build_time: env!("VERGEN_BUILD_TIME"),
+        build_time: env!("VERGEN_BUILD_TIMESTAMP"),
     })
 }
