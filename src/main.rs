@@ -89,8 +89,8 @@ async fn main() {
     use minne_backend::routes::{
         auth::authenticate_app_with_pat, auth::disable_pat, auth::get_authentication_token,
         health::check_backend_health, task::add_new_task, task::delete_task, task::edit_task,
-        task::get_all_task_ids_from_user, task::get_task, user::create_new_user,
-        version::get_backend_version,
+        task::get_all_task_ids_from_user, task::get_all_tasks_which_are_not_known, task::get_task,
+        user::create_new_user, version::get_backend_version,
     };
     use rocket::config::{Shutdown, Sig};
     use rocket::figment::{
@@ -123,7 +123,7 @@ async fn main() {
     // just inform the user that we are starting up
     info!(
         "Starting Minne backend ({}, build with rustc {})...",
-        env!("VERGEN_GIT_SEMVER"),
+        env!("VERGEN_GIT_DESCRIBE"),
         env!("VERGEN_RUSTC_SEMVER")
     );
 
@@ -289,6 +289,7 @@ async fn main() {
                 get_all_task_ids_from_user,
                 disable_pat,
                 get_task,
+                get_all_tasks_which_are_not_known,
                 edit_task,
                 authenticate_app_with_pat,
             ],
